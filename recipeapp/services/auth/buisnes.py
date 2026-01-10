@@ -15,6 +15,12 @@ class AuthService(BaseUowService['AuthUow']):
     def __init__(self, uow_factory : 'AuthUow'):
         super().__init__(uow_factory)
 
+
+    def _get_token_pair(self, user_id, device_id, mail) -> Tuple[str, str, str, str]:
+        access_jti, access_token = create_access_token(user_id=user_id, device_id=device_id, mail=mail)
+        refresh_jti, refresh_token = create_refresh_token(user_id=user_id, device_id=device_id, mail=mail)
+        return access_jti, access_token, refresh_jti, refresh_token
+
     @BaseUowService.transactional()
     async def register(self, data : ServiceUserRegister) -> Tuple[str, str]: 
         """
@@ -36,6 +42,8 @@ class AuthService(BaseUowService['AuthUow']):
             )
         logger.debug("Create user ...")
         hashed_password = hash_password(data.password)
+        logger.debug("Create profile ...")
+        # создаем профиль 
         user = await self.uow.user_repository.create(mail=data.mail, hash_password=hashed_password)
         logger.debug("Create tokens ...")
         access_jti, access_token = create_access_token(user_id=user.id, device_id=data.device_id, mail=user.mail)
@@ -86,7 +94,10 @@ class AuthService(BaseUowService['AuthUow']):
         if not current_session:
             logger.debug(f"Session not found, create new ...")
             """
+
             отправить уведомление пользователю о новом устройстве
+
+            
             """ 
             current_session = await self.uow.session_repository.create(
                 device_id = data.device_id,

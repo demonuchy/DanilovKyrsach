@@ -1,3 +1,5 @@
+
+
 # alembic/env.py
 import sys
 from pathlib import Path
@@ -7,14 +9,11 @@ from sqlalchemy import pool
 from alembic import context
 
 from db.base import RecipeBase
+from db.models import *     # noqe
 from shared.config import config as cfg
 
 
-
 config = context.config
-
-#logger.debug(f"Auth установка url {cfg.AsyncDataBaseUrl}")
-#config.set_main_option("sqlalchemy.url", cfg.AsyncDataBaseUrl)
 
 
 if config.config_file_name is not None:
@@ -23,7 +22,6 @@ if config.config_file_name is not None:
 context.config.set_main_option("sqlalchemy.url", cfg.DataBaseUrl)
 
 target_metadata = RecipeBase.metadata
-
 
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
@@ -46,7 +44,9 @@ def run_migrations_online() -> None:
     )
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection, 
+            target_metadata=target_metadata,
+            version_table_schema="recipe",
         )
 
         with context.begin_transaction():

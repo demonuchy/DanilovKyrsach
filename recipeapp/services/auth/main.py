@@ -34,8 +34,7 @@ async def lifespan(app : FastAPI):
     logger.info("Shutdown auth service")
 
 
-app = FastAPI(lifespan=lifespan)
-
+app = FastAPI(lifespan=lifespan, title="Auth service")
 
 
 @app.get("/health")

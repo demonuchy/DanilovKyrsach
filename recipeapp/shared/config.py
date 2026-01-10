@@ -32,7 +32,6 @@ class Settings(BaseSettings):
     @property
     def AsyncDataBaseUrl(self):
         """Url для подключения к базе данных"""
-        print(os.getenv('IN_DOCKER'))
         if os.getenv('IN_DOCKER'):
             return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_CONTAINER_NAME}:{self.DB_PORT}/{self.DB_NAME}"
         return  f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
@@ -40,7 +39,6 @@ class Settings(BaseSettings):
     @property
     def DataBaseUrl(self):
         """Url для подключения к базе данных"""
-        uri = None
         if os.getenv('IN_DOCKER'):
             return  f"postgresql://{self.DB_USER}:{self.DB_PASS}@{self.DB_CONTAINER_NAME}:{self.DB_PORT}/{self.DB_NAME}"
         return f"postgresql://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"

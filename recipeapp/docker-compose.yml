@@ -15,6 +15,7 @@ networks:
 
 volumes:
   postgres-data:
+  rabbitmq-data:
   redis-data:
 
 services:
@@ -46,11 +47,11 @@ services:
       - "5672:5672"    # AMQP порт для приложений
       - "15672:15672"  # Web UI порт
     environment:
-      RABBITMQ_USER: ${RABBITMQ_USER}
-      RABBITMQ_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
       RABBITMQ_VHOST: /
     volumes:
-      - ./rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq-data:/var/lib/rabbitmq
       - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json  # предзаполненные настройки
       - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
     healthcheck:
@@ -125,6 +126,7 @@ services:
     environment:
       PYTHONPATH: /app
       IN_DOCKER: 'true'
+      SERVICE_NAME: auth
     volumes:
       - ./services/auth:/app/auth
       - ./shared:/app/shared
@@ -150,7 +152,9 @@ services:
     ports:
       - "8002:8002"
     environment:
-      - PYTHONPATH=/app
+      PYTHONPATH: /app
+      IN_DOCKER: 'true'
+      SERVICE_NAME: recipe
     volumes:
       - ./services/recipe:/app/recipe
       - ./shared:/app/shared

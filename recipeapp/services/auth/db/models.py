@@ -24,7 +24,6 @@ class User(AuthBase):
     hash_password : Mapped[str] = mapped_column(String, nullable=True)
 
     is_active : Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-
     last_login : Mapped[datetime] = mapped_column(DateTime, nullable=False, default=func.now())
     created_at : Mapped[datetime] = mapped_column(DateTime, nullable=False, default=func.now())
 
@@ -34,6 +33,9 @@ class User(AuthBase):
         cascade="delete", 
         lazy="selectin"
         )
+
+    def __repr__(self):
+        return f"<RecipeIngredient recipe={self.mail}>"
     
 
 class UserSession(AuthBase):
@@ -58,6 +60,7 @@ class UserSession(AuthBase):
         nullable=False, 
         index=True
         )
+    
     user : Mapped["User"] = relationship(
         "User", 
         back_populates="sessions",

@@ -1,5 +1,5 @@
 # alembic/env.py
-import sys
+import os
 from pathlib import Path
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, text
@@ -10,17 +10,14 @@ from db.base import AuthBase
 from shared.config import config as cfg
 
 
-
 config = context.config
-
-#logger.debug(f"Auth установка url {cfg.AsyncDataBaseUrl}")
-#config.set_main_option("sqlalchemy.url", cfg.AsyncDataBaseUrl)
 
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 context.config.set_main_option("sqlalchemy.url", cfg.DataBaseUrl)
+
 
 target_metadata = AuthBase.metadata
 
@@ -46,7 +43,9 @@ def run_migrations_online() -> None:
     )
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection, 
+            target_metadata=target_metadata,
+            version_table_schema="auth",
         )
 
         with context.begin_transaction():

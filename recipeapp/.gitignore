@@ -4,6 +4,8 @@ __pycache__/
 *$py.class
 
 postgres-data/
+rabbitmq-data/
+rabbitmq/
 redis-data/
 # C extensions
 *.so

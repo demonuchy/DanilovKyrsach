@@ -1,3 +1,4 @@
+import abc
 from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import List, Optional, TypeVar, Generic, Type, Any, Annotated, Dict, AsyncGenerator
@@ -15,16 +16,12 @@ from ..logger.logger import logger
 class Base(AsyncAttrs, DeclarativeBase):
     """Базовый класс модели"""
     __abstract__ = True
-    __table_args__ = {'extend_existing': True}
-       
-    def __repr__(self):
-        return f"<{self.__class__.__name__}(id={self.id})>"
 
  
 T = TypeVar('T', bound=Base)
 
 
-class BaseRepository(Generic[T]):
+class BaseRepository(abc.ABC, Generic[T]):
 
     """
     Базовый репозиторий для работы с моделями БД
@@ -244,7 +241,7 @@ class AnnotationTypeUow(type):
             cls.add_repo = patch_add_repository
     
 
-class BaseUnitOfWork():
+class BaseUnitOfWork(abc.ABC):
     """
     BaseUnitOfWork read/write.
     
