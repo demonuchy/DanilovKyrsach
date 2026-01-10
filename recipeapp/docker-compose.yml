@@ -1,0 +1,178 @@
+# описывать каждую дерективу я не буду в общих чертах как это работает
+# данный файл вообще отвечает только за сервисы - службы их поднятие и настройку окружения и не тлолько
+
+# в doocker файле нет команды CMD || ENCRYPTED потомучто каждый сервис ее переопределяет и также переопределяет рабочуюю дирректорию
+# собираем в /app а дальше каждый сервис сам по себе 
+
+# еще из важного это сеть она должна просто быть и у всех одинаковая потому что наши сервисы должны взаимодействовать внутри одной 
+# сети 
+
+
+
+networks:   
+  app-network:
+    driver: bridge 
+
+volumes:
+  postgres-data:
+  redis-data:
+
+services:
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - auth-service
+      - recipe-service
+    networks:
+      - app-network
+  
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"    # AMQP порт для приложений
+      - "15672:15672"  # Web UI порт
+    environment:
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_VHOST: /
+    volumes:
+      - ./rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json  # предзаполненные настройки
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - app-network
+
+  redis: 
+    image: redis:latest
+    container_name: redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "$$REDIS_PASSWORD", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    command: >
+      redis-server 
+      --requirepass ${REDIS_PASSWORD} 
+      --loglevel warning  
+      --logfile "" 
+      --daemonize no 
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data
+    networks:
+      - app-network
+   
+  db:
+    image: postgres:15-alpine
+    container_name : db
+    hostname: postgres
+    restart: unless-stopped 
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    command: >
+      postgres
+      -c log_min_messages=warning     
+      -c log_statement=none           
+      -c log_duration=off            
+      -c log_connections=off
+      -c log_disconnections=off 
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data 
+      - ./docker-init-db:/docker-entrypoint-initdb.d
+    healthcheck:                                
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5 
+      start_period: 20s
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+  auth-service:
+    build: .
+    container_name: auth-service
+    working_dir: /app/auth
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      PYTHONPATH: /app
+      IN_DOCKER: 'true'
+    volumes:
+      - ./services/auth:/app/auth
+      - ./shared:/app/shared
+      - ./.env:/app/.env
+    command: >
+      sh -c 
+      "
+      uvicorn main:app --host 0.0.0.0 --port 8001
+      "
+    depends_on:
+      db:
+        condition: service_healthy
+      redis: 
+        condition: service_healthy
+    networks:
+      - app-network
+
+  recipe-service:
+    build: .
+    container_name: recipe-service
+    working_dir: /app/recipe
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - ./services/recipe:/app/recipe
+      - ./shared:/app/shared
+      - ./.env:/app/.env
+    command: >
+      sh -c 
+      "
+      uvicorn main:app --host 0.0.0.0 --port 8002
+      "
+    depends_on:
+      db:
+        condition: service_healthy
+      redis: 
+        condition: service_healthy
+    networks:
+      - app-network
+  
+
+
+
+
+
+
+
+  
