@@ -15,7 +15,6 @@ networks:
 
 volumes:
   postgres-data:
-  rabbitmq-data:
   redis-data:
 
 services:
