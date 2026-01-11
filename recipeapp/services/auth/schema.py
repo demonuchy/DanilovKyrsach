@@ -7,6 +7,7 @@ T=TypeVar("T")
 
 
 class MailValidatorMixin(Generic[T]):
+    """Mixin для валидации почты"""
     @field_validator('mail')
     @classmethod
     def validate_phone(cls, v: str) -> str:
@@ -17,19 +18,23 @@ class MailValidatorMixin(Generic[T]):
 
 
 class UserRegisterRequest(BaseModel):
+    """Модель запроса на регистрацию"""
     mail : str = Field(...,)
     password : str = Field(...,)
 
 
 class ServiceUserRegister(UserRegisterRequest):
+    """Модель для сервисного слоя с доп данными и доп валидациией"""
     device_id : str = Field(...,)  
     device_name : str = Field(...,) 
     ip_addres : str = Field(...,) 
 
 
 class UserLoginRequest(UserRegisterRequest):
+    """Модель запроса на вход"""
     pass
 
 
 class ServiceUserLogin(ServiceUserRegister):
+    """Модель для сервисного слоя с доп данными и доп валидациией"""
     pass

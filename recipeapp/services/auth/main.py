@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 from api import router
+from rabbit.produser import produser
 from db.context import db_health_check
 from shared.logger.logger import logger
 
@@ -29,8 +30,10 @@ UserSession - хранит сессию на конкретном устройс
 
 @asynccontextmanager
 async def lifespan(app : FastAPI):
+    await produser.connect()
     logger.info("Start auth service")
     yield
+    await produser.disconnect()
     logger.info("Shutdown auth service")
 
 

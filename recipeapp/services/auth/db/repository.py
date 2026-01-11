@@ -9,15 +9,21 @@ from shared.database.base import BaseRepository, BaseUnitOfWork
 
 
 class UserRepository(BaseRepository[User]):
+    """Репзиторий для работы с моделью пользователей"""
     def __init__(self, session : AsyncSession):
         super().__init__(session=session, model=User)
 
 
 class UserSessionRepository(BaseRepository[UserSession]):
+    """Репзиторий для работы с моделью сессий пользователей"""
     def __init__(self, session : AsyncSession):
         super().__init__(session=session, model=UserSession)
     
     async def filter_join(self, **filters):
+        """
+        Метод такойже как и базовый super().filte() только с 
+        подгрузкой ralationdship обьектов одним запросом joined
+        """
         stmt = select(self.model)
         for key, value in filters.items():
             if hasattr(self.model, key):

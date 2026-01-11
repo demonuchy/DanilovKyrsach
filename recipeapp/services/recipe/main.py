@@ -3,14 +3,17 @@ from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
+from rabbit.consumer import consumer
 from db.context import db_health_check
 
 from shared.logger.logger import logger
 
 @asynccontextmanager
 async def lifespan(app : FastAPI):
+    await consumer.start_consuming()
     logger.info("Start recipe service")
     yield
+    await consumer.stop_consuming()
     logger.info("Shutdown recipe service")
 
 

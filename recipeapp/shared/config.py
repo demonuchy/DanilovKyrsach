@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     REDIS_CONTAINER_NAME : str
     REDIS_PASSWORD : str
 
+    RABBITMQ_USER : str 
+    RABBITMQ_PASS : str 
+    RABBITMQ_HOST : str
+    RABBITMQ_PORT : str
+    RABBITMQ_VHOST : str
+    RABBITMQ_CONTAINER_NAME : str
+
     JWT_SECRET_KEY : str
     JWT_ACCESS_EXPIRE_MINETS : int
     JWT_REFRESH_EXPIRE_MINETS : int
@@ -48,6 +55,18 @@ class Settings(BaseSettings):
         if os.getenv('IN_DOCKER'):
             return self.REDIS_CONTAINER_NAME
         return self.REDIS_HOST
+    
+    @property
+    def RabbitHost(self):
+        if os.getenv('IN_DOCKER'):
+            return self.RABBITMQ_CONTAINER_NAME
+        return self.RABBITMQ_HOST
+
+    @property
+    def RabbitUrl(self):
+        if os.getenv('IN_DOCKER'):
+            return f"amqp://{self.RABBITMQ_USER}:{self.RABBITMQ_PASS}@{self.RABBITMQ_CONTAINER_NAME}:{self.RABBITMQ_PORT}/{self.RABBITMQ_VHOST}"
+        return f"amqp://{self.RABBITMQ_USER}:{self.RABBITMQ_PASS}@{self.RABBITMQ_HOST}:{self.RABBITMQ_PORT}/{self.RABBITMQ_VHOST}"
     
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,

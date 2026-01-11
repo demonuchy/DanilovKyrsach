@@ -5,7 +5,7 @@ from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, declared_attr
 
 
 class AuthBase(AsyncAttrs, DeclarativeBase):
-    """..."""
+    """Базовая модель для auth сервиса"""
     __abstract__ = True
 
     @declared_attr

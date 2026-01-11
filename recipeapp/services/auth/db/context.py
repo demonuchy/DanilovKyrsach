@@ -25,12 +25,14 @@ session_factory = async_sessionmaker(
 
 
 async def get_session():
+    """Простая фабрика сессий"""
     async with session_factory() as session:
         yield session
 
 
 
 async def db_health_check():
+    """Проверка подключения к базе данных"""
     logger.debug("Тестируем подключение к бд")
     try:
         session = session_factory()

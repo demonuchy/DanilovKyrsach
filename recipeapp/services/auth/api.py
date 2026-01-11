@@ -8,6 +8,7 @@ from schema import UserRegisterRequest, ServiceUserRegister, UserLoginRequest, S
 from shared.depends import errors
 
 
+
 security = HTTPBearer()
 
 

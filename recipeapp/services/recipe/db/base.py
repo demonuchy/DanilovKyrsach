@@ -5,7 +5,7 @@ from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, declared_attr
 
 
 class RecipeBase(AsyncAttrs, DeclarativeBase):
-    """..."""
+    """Базовая модель сервиса рецептов"""
     __abstract__ = True
 
     @declared_attr
