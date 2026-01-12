@@ -1,11 +1,14 @@
+import asyncio
 from fastapi import APIRouter, status, Header, Depends
 from fastapi.responses import JSONResponse, Response
 from fastapi.requests import Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from depends import ServiceDep
+from rabbit.produser import produser
 from schema import UserRegisterRequest, ServiceUserRegister, UserLoginRequest, ServiceUserLogin
 from shared.depends import errors
+from shared.logger.logger import logger
 
 
 
@@ -13,6 +16,25 @@ security = HTTPBearer()
 
 
 router = APIRouter(prefix="/api/v1/auth")
+
+@errors()
+@router.get("/rebbit/test")
+async def test_rabbit():
+    logger.debug("начинаем обработку ...")
+    response = await produser.publish_dict(rpc = True, routing_key="user.test", message={"user_id" : 1234}, exch_name="user")
+    logger.debug(f"ответ : {response} - {type(response)}")
+    await asyncio.sleep(0.5) # имитация бизнес логики
+    logger.debug("я тоже работаю 25%")
+    await asyncio.sleep(0.5) # имитация бизнес логики 
+    logger.debug("я тоже работаю 50%")
+    await asyncio.sleep(0.5) # имитация бизнес логики 
+    logger.debug("я тоже работаю 75%")
+    await asyncio.sleep(0.5) # имитация бизнес логики 
+    logger.debug("я закончил 100%")
+    return JSONResponse(
+        content={"details" : "OK"}, 
+        status_code=status.HTTP_200_OK
+        )
 
 
 @errors()
@@ -42,7 +64,8 @@ async def register(
                 "refresh_token" : refresh_token,
                 }
             }, 
-        status_code=status.HTTP_201_CREATED)
+        status_code=status.HTTP_201_CREATED
+        )
 
 
 @errors()

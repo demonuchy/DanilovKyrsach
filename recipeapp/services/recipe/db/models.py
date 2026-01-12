@@ -16,7 +16,7 @@ class Profile(RecipeBase):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False, index=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=True)
     
     recipes: Mapped[List['Recipe']] = relationship(
         'Recipe', 

@@ -1,23 +1,33 @@
 import uvicorn
+import asyncio
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 from rabbit.consumer import consumer
+from rabbit.handlers import broker
+
 from db.context import db_health_check
 
 from shared.logger.logger import logger
 
+
+
+
 @asynccontextmanager
 async def lifespan(app : FastAPI):
+    consumer.add_broker(broker)
+    await consumer.connect()
     await consumer.start_consuming()
     logger.info("Start recipe service")
     yield
     await consumer.stop_consuming()
+    await consumer.disconnect()
     logger.info("Shutdown recipe service")
 
 
 app = FastAPI(lifespan=lifespan, title="Recipes service")
+
 
 
 @app.post("/api/v1/users")

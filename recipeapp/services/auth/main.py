@@ -30,10 +30,8 @@ UserSession - хранит сессию на конкретном устройс
 
 @asynccontextmanager
 async def lifespan(app : FastAPI):
-    await produser.connect()
     logger.info("Start auth service")
     yield
-    await produser.disconnect()
     logger.info("Shutdown auth service")
 
 

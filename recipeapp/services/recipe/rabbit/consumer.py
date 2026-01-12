@@ -1,6 +1,7 @@
 import asyncio
 from typing import Optional
-from faststream.rabbit import RabbitBroker, RabbitExchange, ExchangeType
+from aio_pika.exceptions import AMQPConnectionError
+from faststream.rabbit import RabbitBroker
 from shared.config import config as cfg
 from shared.logger.logger import logger
 from shared.rabbit.base import BaseBroker, AbstractConsumer
@@ -11,11 +12,15 @@ class RabbitConsumer(AbstractConsumer):
         super().__init__(url=cfg.RabbitUrl)
         self._consume_task = None
 
+    def add_broker(self, broker : RabbitBroker):
+        self._broker = broker
+
     async def start_consuming(self) -> None:
         """Начать потребление сообщений"""
         logger.debug("Start consuming")
+        logger.debug(f"handlers {self.broker.subscribers}")
         if not self.is_connect:
-            await self.connect()
+            logger.error("Failed connect not exsist")
         if self._consume_task and not self._consume_task.done():
             return
         self._consume_task = asyncio.create_task(self._broker.start())
@@ -29,7 +34,5 @@ class RabbitConsumer(AbstractConsumer):
                 await self._consume_task
             except asyncio.CancelledError:
                 pass
-        if self.is_connect:
-            self.disconnect()
 
 consumer = RabbitConsumer()

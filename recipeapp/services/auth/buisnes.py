@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from schema import ServiceUserRegister, ServiceUserLogin
 from db.repository import AuthUow
 from rd.context import accounting_token, get_token
+from rabbit.produser import produser 
 from utils.jwt_manager import create_access_token, create_refresh_token, verefy_token
 from utils.password_hash import hash_password, is_password_valid
 from shared.service.base import BaseUowService
@@ -21,6 +22,10 @@ class AuthService(BaseUowService['AuthUow']):
         refresh_jti, refresh_token = create_refresh_token(user_id=user_id, device_id=device_id, mail=mail)
         return access_jti, access_token, refresh_jti, refresh_token
 
+    async def _accounting_token(self, user_id : int, device_id : int, access_jti : str) -> None:
+        key = f"{device_id}:{user_id}"
+        await accounting_token(key=key, value={"jti" : str(access_jti)})
+        
     @BaseUowService.transactional()
     async def register(self, data : ServiceUserRegister) -> Tuple[str, str]: 
         """
@@ -33,7 +38,7 @@ class AuthService(BaseUowService['AuthUow']):
         """
         logger.info(f"Register attemp {data.mail} - {data.password}")
         logger.debug("checking if the user exists")
-        user = await self.uow.user_repository.delete_by_field("mail", data.mail)
+        user = await self.uow.user_repository.exists_by_field("mail", data.mail)
         if user:
             logger.warn(f"User already exists {data.mail} - {data.password}")
             raise HTTPException(
@@ -42,12 +47,28 @@ class AuthService(BaseUowService['AuthUow']):
             )
         logger.debug("Create user ...")
         hashed_password = hash_password(data.password)
-        logger.debug("Create profile ...")
-        # создаем профиль 
         user = await self.uow.user_repository.create(mail=data.mail, hash_password=hashed_password)
+        logger.debug("Create profile ...")
+        response = await produser.publish_dict(
+            rpc=True, 
+            routing_key="user.create", 
+            message={"user_id" : user.id}, 
+            exch_name="user",
+            timeout=1
+            )
+        if not response or response['status_code'] != 201:
+            logger.warn("Recipe service is not responding ")
+            raise HTTPException(
+                detail="Error on recipe service : failid create profile", 
+                status_code=status.HTTP_502_BAD_GATEWAY
+                )
+        logger.debug("profile create succsesfull")
         logger.debug("Create tokens ...")
-        access_jti, access_token = create_access_token(user_id=user.id, device_id=data.device_id, mail=user.mail)
-        refresh_jti, refresh_token = create_refresh_token(user_id=user.id, device_id=data.device_id)
+        access_jti, access_token, refresh_jti, refresh_token = self._get_token_pair(
+            user_id=user.id, 
+            device_id=data.device_id, 
+            mail=user.mail
+        )
         logger.debug("Create user session ...")
         user_session = await self.uow.session_repository.create(
             device_id = data.device_id,
@@ -57,14 +78,11 @@ class AuthService(BaseUowService['AuthUow']):
             user_id = user.id
         )
         logger.debug("Save access token into redis ...")
-        key = f"{data.device_id}:{user.id}"
-        await accounting_token(
-            key=key, 
-            value={"jti" : str(access_jti)}
-            )
+        await self._accounting_token(user_id = user.id, device_id = data.device_id, access_jti = access_jti)
         logger.info(f"User created {data.mail} - {data.password}")
         return access_token, refresh_token
-    
+        
+        
     @BaseUowService.transactional()
     async def login(self, data : ServiceUserLogin) -> Tuple[str, str]: 
         """
@@ -87,8 +105,11 @@ class AuthService(BaseUowService['AuthUow']):
                 status_code=status.HTTP_401_UNAUTHORIZED
             )
         logger.debug("Create tokens ...")
-        access_jti, access_token = create_access_token(user_id=user.id, device_id=data.device_id, mail=user.mail)
-        refresh_jti, refresh_token = create_refresh_token(user_id=user.id, device_id=data.device_id)
+        access_jti, access_token, refresh_jti, refresh_token = self._get_token_pair(
+            user_id=user.id, 
+            device_id=data.device_id, 
+            mail=user.mail
+        )
         logger.debug("checking if the session exists")
         current_session = await self.uow.session_repository.filter(user_id = user.id, device_id = data.device_id)
         if not current_session:
@@ -97,7 +118,6 @@ class AuthService(BaseUowService['AuthUow']):
 
             отправить уведомление пользователю о новом устройстве
 
-            
             """ 
             current_session = await self.uow.session_repository.create(
                 device_id = data.device_id,
@@ -113,11 +133,7 @@ class AuthService(BaseUowService['AuthUow']):
                 raise HTTPException(detail="Session is blocked", status_code=status.HTTP_423_LOCKED)
             await self.uow.session_repository.update(id=current_session.id, refresh_jti=refresh_jti, ip_addres=data.ip_addres)
         logger.debug("Save access token into redis ...")
-        key = f"{data.device_id}:{user.id}"
-        await accounting_token(
-            key=key, 
-            value={"jti" : str(access_jti)}
-            )
+        await self._accounting_token(user_id = user.id, device_id = data.device_id, access_jti = access_jti)
         logger.info(f"User login {data.mail} - {data.password}")
         return access_token, refresh_token
 
@@ -176,12 +192,12 @@ class AuthService(BaseUowService['AuthUow']):
             logger.warn("Failed comparison JTI")
             raise HTTPException(detail="Token is not valid", status_code=status.HTTP_401_UNAUTHORIZED)
         logger.debug("Accounting token...")
-        access_jti, access_token = create_access_token(user_id=user_id, device_id=current_session.device_id, mail=current_session.user.mail)
-        key = f"{device_id}:{user_id}"
-        await accounting_token(
-            key=key, 
-            value={"jti" : str(access_jti)}
-            )
+        access_jti, access_token = create_access_token(
+            user_id=user_id, 
+            device_id=current_session.device_id, 
+            mail=current_session.user.mail
+        )
+        await self._accounting_token(user_id = user_id, device_id = device_id, access_jti = access_jti)
         logger.info("Refresh succsess")
         return user_id, access_token 
     
