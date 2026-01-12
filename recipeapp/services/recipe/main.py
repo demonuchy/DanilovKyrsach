@@ -1,11 +1,11 @@
 import uvicorn
-import asyncio
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, Header
 from fastapi.responses import JSONResponse
+from fastapi.requests import Request
 from contextlib import asynccontextmanager
 
 from rabbit.consumer import consumer
-from rabbit.handlers import broker
+from handlers import broker
 
 from db.context import db_health_check
 
@@ -31,7 +31,8 @@ app = FastAPI(lifespan=lifespan, title="Recipes service")
 
 
 @app.post("/api/v1/users")
-async def user():
+async def test_user(request : Request, user_id = Header(...,alias="X-User-Id")):
+    logger.info(f"user id : {user_id}")
     return  JSONResponse(
             content={"detail" : "ok"}, 
             status_code=status.HTTP_200_OK

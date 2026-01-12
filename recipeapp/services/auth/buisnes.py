@@ -196,7 +196,7 @@ class AuthService(BaseUowService['AuthUow']):
             user_id=user_id, 
             device_id=current_session.device_id, 
             mail=current_session.user.mail
-        )
+            )
         await self._accounting_token(user_id = user_id, device_id = device_id, access_jti = access_jti)
         logger.info("Refresh succsess")
         return user_id, access_token 

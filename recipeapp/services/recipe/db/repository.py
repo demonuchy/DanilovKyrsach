@@ -10,17 +10,17 @@ from shared.database.base import BaseRepository, BaseUnitOfWork
 
 class ProfileRepository(BaseRepository[Profile]):
     def __init__(self, session : AsyncSession):
-        super().__init__(session=session, mode = Profile)
+        super().__init__(session=session, model = Profile)
 
 
 class RecipeRepository(BaseRepository[Recipe]):
     def __init__(self, session : AsyncSession):
-        super().__init__(session=session, mode = Recipe)
+        super().__init__(session=session, model = Recipe)
 
 
 class RecipeIngredientRepository(BaseRepository[RecipeIngredient]):
     def __init__(self, session : AsyncSession):
-        super().__init__(session=session, mode = RecipeIngredient)
+        super().__init__(session=session, model = RecipeIngredient)
 
 
 class RecipehUow(BaseUnitOfWork):

@@ -17,7 +17,7 @@ class BaseBroker(abc.ABC):
     """
     MAX_CONNECTION_ATTEMP : int 
 
-    def __init__(self, url : str, max_connection_attemp = 3):
+    def __init__(self, url : str, max_connection_attemp = 5):
         self._broker : RabbitBroker = None 
         self.MAX_CONNECTION_ATTEMP = max_connection_attemp
         self._is_connect=False

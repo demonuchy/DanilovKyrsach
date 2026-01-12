@@ -12,7 +12,7 @@ from .base import RecipeBase
 
 
 class Profile(RecipeBase):
-    __tablename__ = 'user_profiles'
+    __tablename__ = 'profiles'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False, index=True)
@@ -39,7 +39,7 @@ class Recipe(RecipeBase):
     
     # ForeignKey к Profile
     profile_id: Mapped[int] = mapped_column(
-        ForeignKey('recipe.user_profiles.id', ondelete='CASCADE'),
+        ForeignKey('recipe.profiles.id', ondelete='CASCADE'),
         nullable=False,
         index=True
     )
