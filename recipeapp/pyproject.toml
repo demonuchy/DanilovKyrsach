@@ -35,6 +35,7 @@ dependencies = [
     "pygments==2.19.2",
     "pyjwt==2.10.1",
     "pytest==9.0.2",
+    "pytest-timer>=1.0.0",
     "python-dotenv==1.2.1",
     "redis==7.1.0",
     "sqlalchemy==2.0.45",

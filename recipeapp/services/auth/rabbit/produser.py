@@ -64,11 +64,13 @@ class SRabbitProduser(SimpleRabbitProducer):
                 corutine = self.publish_rpc
                 response = await asyncio.wait_for(corutine(message=message, **kwargs), timeout)
             except asyncio.TimeoutError:
+                logger.warn("Failed to complete the task")
                 pass
         else:
             corutine = self.publish
             response = corutine(message=message, **kwargs)
         return json.loads(response)
+        
 
 
 produser = SRabbitProduser()

@@ -12,6 +12,16 @@ class SimpleRabbitProducer:
         self.url = url
         self._connection_pool : Pool[aio_pika.Connection] = Pool(lambda: aio_pika.connect_robust(self.url), max_size=10)
         self._channel_pool = None
+
+    def __del__(self):
+        try:
+            loop=asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(self.close())
+            else:
+                loop.run_until_complete(self.close())
+        except:
+            pass
         
     async def _create_channel_pool(self, connection) -> Pool[aio_pika.Channel]:
         if self._channel_pool is None:

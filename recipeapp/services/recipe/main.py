@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.requests import Request
 from contextlib import asynccontextmanager
 
+from api import router
 from rabbit.consumer import consumer
 from handlers import broker
 
@@ -59,7 +60,8 @@ async def db_health():
             content={"detail" : "Auth service the connection to the database ian unforeseen event!"}, 
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-  
+
+app.include_router(router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", port=8002, host="0.0.0.0", reload=True)

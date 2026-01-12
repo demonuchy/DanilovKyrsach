@@ -23,14 +23,6 @@ async def test_rabbit():
     logger.debug("начинаем обработку ...")
     response = await produser.publish_dict(rpc = True, routing_key="user.test", message={"user_id" : 1234}, exch_name="user")
     logger.debug(f"ответ : {response} - {type(response)}")
-    await asyncio.sleep(0.5) # имитация бизнес логики
-    logger.debug("я тоже работаю 25%")
-    await asyncio.sleep(0.5) # имитация бизнес логики 
-    logger.debug("я тоже работаю 50%")
-    await asyncio.sleep(0.5) # имитация бизнес логики 
-    logger.debug("я тоже работаю 75%")
-    await asyncio.sleep(0.5) # имитация бизнес логики 
-    logger.debug("я закончил 100%")
     return JSONResponse(
         content={"details" : "OK"}, 
         status_code=status.HTTP_200_OK

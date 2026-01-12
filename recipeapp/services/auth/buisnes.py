@@ -1,3 +1,4 @@
+import asyncio
 from typing import Callable, Tuple
 from fastapi import HTTPException, status
 
@@ -48,14 +49,35 @@ class AuthService(BaseUowService['AuthUow']):
         logger.debug("Create user ...")
         hashed_password = hash_password(data.password)
         user = await self.uow.user_repository.create(mail=data.mail, hash_password=hashed_password)
-        logger.debug("Create profile ...")
-        response = await produser.publish_dict(
-            rpc=True, 
-            routing_key="user.create", 
-            message={"user_id" : user.id}, 
-            exch_name="user",
-            timeout=1
+        logger.debug("Create profile task...")
+        profile_task = asyncio.create_task(
+            produser.publish_dict(
+                rpc=True, 
+                routing_key="user.create", 
+                message={"user_id" : user.id}, 
+                exch_name="user",
+                timeout=1
+                ),
+            name="profile_task"
+        )
+        logger.debug("Create tokens ...")
+        access_jti, access_token, refresh_jti, refresh_token = self._get_token_pair(
+            user_id=user.id, 
+            device_id=data.device_id, 
+            mail=user.mail
+        )
+        logger.debug("Create user session...")
+        user_session = await self.uow.session_repository.create(
+                device_id = data.device_id,
+                device_name = data.device_name,
+                ip_addres = data.ip_addres,
+                refresh_jti = refresh_jti,
+                user_id = user.id
             )
+        logger.debug("Save access token into redis ...")
+        await self._accounting_token(user_id = user.id, device_id = data.device_id, access_jti = access_jti)
+        logger.debug("Create profile ...")
+        response = await profile_task
         if not response or response['status_code'] != 201:
             logger.warn("Recipe service is not responding ")
             raise HTTPException(
@@ -63,22 +85,6 @@ class AuthService(BaseUowService['AuthUow']):
                 status_code=status.HTTP_502_BAD_GATEWAY
                 )
         logger.debug("profile create succsesfull")
-        logger.debug("Create tokens ...")
-        access_jti, access_token, refresh_jti, refresh_token = self._get_token_pair(
-            user_id=user.id, 
-            device_id=data.device_id, 
-            mail=user.mail
-        )
-        logger.debug("Create user session ...")
-        user_session = await self.uow.session_repository.create(
-            device_id = data.device_id,
-            device_name = data.device_name,
-            ip_addres = data.ip_addres,
-            refresh_jti = refresh_jti,
-            user_id = user.id
-        )
-        logger.debug("Save access token into redis ...")
-        await self._accounting_token(user_id = user.id, device_id = data.device_id, access_jti = access_jti)
         logger.info(f"User created {data.mail} - {data.password}")
         return access_token, refresh_token
         
@@ -144,8 +150,6 @@ class AuthService(BaseUowService['AuthUow']):
         #### 2 проверяем реггистрацию токена
         #### 3 возвращаем ответ 
         """
-        logger.debug("Vrerefy access token")
-        logger.debug(f"{access_token}")
         logger.debug("Validate token ...")
         pyload : dict = verefy_token(token=access_token)
         if not pyload:
