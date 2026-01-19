@@ -8,7 +8,6 @@ from typing import Literal
 from shared.logger.logger import logger
 from shared.config import config 
 
-
 def _create_token(
         kid: str, 
         user_id: int, 
@@ -104,6 +103,7 @@ def create_refresh_token(
 
 def verefy_token(
         token : str, 
+        type : Literal["access", "refresh"],
         key : str = config.JWT_SECRET_KEY,
         algorithms=[config.JWT_ALGORITM]
         ) -> dict | None:
@@ -125,6 +125,8 @@ def verefy_token(
             key=key, 
             algorithms=algorithms
             )
+        if pyload.get("type") != type:
+            return False
         return pyload
     except jwt.InvalidSignatureError:
         logger.warn("Подпись недействительна!")

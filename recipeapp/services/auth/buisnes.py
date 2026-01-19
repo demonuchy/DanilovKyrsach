@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 
 from schema import ServiceUserRegister, ServiceUserLogin
 from db.repository import AuthUow
-from rd.context import accounting_token, get_token
+from rd.context import accounting_token, get_token, delete_token
 from rabbit.produser import produser 
 from utils.jwt_manager import create_access_token, create_refresh_token, verefy_token
 from utils.password_hash import hash_password, is_password_valid
@@ -18,9 +18,9 @@ class AuthService(BaseUowService['AuthUow']):
         super().__init__(uow_factory)
 
 
-    def _get_token_pair(self, user_id, device_id, mail) -> Tuple[str, str, str, str]:
-        access_jti, access_token = create_access_token(user_id=user_id, device_id=device_id, mail=mail)
-        refresh_jti, refresh_token = create_refresh_token(user_id=user_id, device_id=device_id, mail=mail)
+    def _get_token_pair(self, user_id, device_id, mail, is_admin) -> Tuple[str, str, str, str]:
+        access_jti, access_token = create_access_token(user_id=user_id, device_id=device_id, mail=mail, is_admin=is_admin)
+        refresh_jti, refresh_token = create_refresh_token(user_id=user_id, device_id=device_id, mail=mail, is_admin=is_admin)
         return access_jti, access_token, refresh_jti, refresh_token
 
     async def _accounting_token(self, user_id : int, device_id : int, access_jti : str) -> None:
@@ -54,7 +54,10 @@ class AuthService(BaseUowService['AuthUow']):
             produser.publish_dict(
                 rpc=True, 
                 routing_key="user.create", 
-                message={"user_id" : user.id}, 
+                message={
+                    "user_id" : user.id, 
+                    "mail" : user.mail
+                }, 
                 exch_name="user",
                 timeout=1
                 ),
@@ -141,7 +144,7 @@ class AuthService(BaseUowService['AuthUow']):
         logger.debug("Save access token into redis ...")
         await self._accounting_token(user_id = user.id, device_id = data.device_id, access_jti = access_jti)
         logger.info(f"User login {data.mail} - {data.password}")
-        return access_token, refresh_token
+        return access_token, refresh_token, user.is_admin
 
     async def authorized(self, access_token : str, ip_addres : str) -> int: 
         """
@@ -151,7 +154,7 @@ class AuthService(BaseUowService['AuthUow']):
         #### 3 возвращаем ответ 
         """
         logger.debug("Validate token ...")
-        pyload : dict = verefy_token(token=access_token)
+        pyload : dict = verefy_token(token=access_token, type="access")
         if not pyload:
             logger.warn("Token is not valid")
             raise HTTPException(detail="Token is not valid", status_code=status.HTTP_401_UNAUTHORIZED)
@@ -167,7 +170,7 @@ class AuthService(BaseUowService['AuthUow']):
             raise HTTPException(detail="Token is not valid", status_code=status.HTTP_401_UNAUTHORIZED)
         logger.debug("User authenticate succsesfull")
         # проинуть в фоновую задачу обновление активности сессии
-        return user_id
+        return user_id, pyload.get("is_admin")
 
     @BaseUowService.transactional(read_only=True)
     async def refresh(self, refresh_token : str, ip_addres) -> int: 
@@ -180,7 +183,7 @@ class AuthService(BaseUowService['AuthUow']):
         """
         logger.debug("Vrerefy refresh token")
         logger.debug("Validate token ...")
-        pyload : dict = verefy_token(token=refresh_token)
+        pyload : dict = verefy_token(token=refresh_token, type="refresh")
         if not pyload:
             logger.warn("Token is not valid")
             raise HTTPException(detail="Token is not valid", status_code=status.HTTP_401_UNAUTHORIZED)
@@ -199,13 +202,26 @@ class AuthService(BaseUowService['AuthUow']):
         access_jti, access_token = create_access_token(
             user_id=user_id, 
             device_id=current_session.device_id, 
-            mail=current_session.user.mail
+            mail=current_session.user.mail,
+            is_admin=pyload.get("is_admin")
             )
         await self._accounting_token(user_id = user_id, device_id = device_id, access_jti = access_jti)
         logger.info("Refresh succsess")
         return user_id, access_token 
+
+    @BaseUowService.transactional()
+    async def logout(self, user_id : int, device_id : int) -> bool:
+        logger.info(f"Attemp logout")
+        logger.debug(f"get user session")
+        user_session = await self.uow.session_repository.filter(user_id=user_id, device_id=device_id)
+        if not user_session:
+            raise HTTPException(detail="Session not found", statu_code=status.HTTP_404_NOT_FOUND)
+        logger.debug("delete access token")
+        await delete_token(f"{user_session.device_id}:{user_session.user_id}")
+        logger.debug("delete session")
+        await self.uow.session_repository.delete(id=user_session.id)
+        return True
     
-    async def recover_password(self, data) -> None: 
-        pass
+        
 
         

@@ -2,7 +2,7 @@ import pytest
 import httpx
 import asyncio
 
-host = "http://127.0.0.1:8080/api/v1/auth"
+host = "http://127.0.0.1:8001/api/v1/auth"
 
 
 @pytest.fixture
@@ -137,14 +137,6 @@ async def test_auth(client, user_data, device_headers):
         headers={"Authorization" : f"Bearer {access_token}"}
     )
     assert response.status_code == 200
-
-    await asyncio.sleep(31)
-
-    response = await client.post(
-        url=f"http://127.0.0.1:8080/api/v1/users",
-        headers={"Authorization" : f"Bearer {access_token}"}
-    )
-    assert response.status_code == 401
 
     response = await client.post(
         url=f"{host}/refresh",

@@ -174,6 +174,36 @@ services:
         condition: service_healthy
     networks:
       - app-network
+
+  admin-service:
+    build: .
+    container_name: admin-service
+    working_dir: /app/admin
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      PYTHONPATH: /app
+      IN_DOCKER: 'true'
+      SERVICE_NAME: admin
+    volumes:
+      - ./services/admin:/app/admin
+      - ./shared:/app/shared
+      - ./.env:/app/.env
+    command: >
+      sh -c 
+      "
+      uvicorn main:app --host 0.0.0.0 --port 8003
+      "
+    depends_on:
+      db:
+        condition: service_healthy
+      redis: 
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
   
 
 

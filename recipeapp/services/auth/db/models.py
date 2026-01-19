@@ -24,6 +24,7 @@ class User(AuthBase):
     hash_password : Mapped[str] = mapped_column(String, nullable=True)
 
     is_active : Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    is_admin : Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     last_login : Mapped[datetime] = mapped_column(DateTime, nullable=False, default=func.now())
     created_at : Mapped[datetime] = mapped_column(DateTime, nullable=False, default=func.now())
 
@@ -35,7 +36,7 @@ class User(AuthBase):
         )
 
     def __repr__(self):
-        return f"<RecipeIngredient recipe={self.mail}>"
+        return f"<User mail={self.mail}>"
     
 
 class UserSession(AuthBase):
@@ -47,9 +48,9 @@ class UserSession(AuthBase):
 
     id : Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
 
-    device_id : Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
-    device_name : Mapped[str] = mapped_column(String(30), unique=False, nullable=False)
-    ip_addres : Mapped[str] = mapped_column(String(15), unique=False, nullable=False)
+    device_id : Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    device_name : Mapped[str] = mapped_column(String, unique=False, nullable=False)
+    ip_addres : Mapped[str] = mapped_column(String, unique=False, nullable=False)
     refresh_jti : Mapped[uuid.UUID] = mapped_column(UUID, nullable=False, index=True)
     last_activity : Mapped[datetime] = mapped_column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 

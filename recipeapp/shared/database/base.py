@@ -49,8 +49,16 @@ class BaseRepository(abc.ABC, Generic[T]):
     """
 
     def __init__(self, session: AsyncSession, model: Type[T]):
-        self.session = session
-        self.model = model
+        self._session = session
+        self._model = model
+
+    @property
+    def session(self) -> AsyncSession:
+        return self._session
+
+    @property
+    def model(self) -> Type[T]:
+        return self._model
 
     # READ operations
     async def get_by_id(self, id: int) -> Optional[T]:

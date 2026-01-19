@@ -11,7 +11,7 @@ user_exch = RabbitExchange("user", type=ExchangeType.TOPIC, durable=True)
 # Обработчик для user.create
 @broker.subscriber(
     RabbitQueue(
-        name="user_create_queue",  # УНИКАЛЬНОЕ имя очереди!
+        name="user_create_queue",  
         routing_key="user.create"
     ),
     user_exch,
@@ -23,7 +23,8 @@ async def handle_user_create(message: RabbitMessage):
         data = json.loads(message.body.decode())
         logger.info(f"Creating profile: {data}")
         user_id = data.get("user_id")
-        await service.create_profile(user_id)
+        mail = data.get("mail")
+        await service.create_profile(user_id=user_id, mail=mail)
         return json.dumps({
             "status_code": 201,
             "message": "Profile created successfully",

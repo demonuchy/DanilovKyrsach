@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     JWT_ALGORITM : str
     JWT_KID : str
 
+    ADMIN_SECRET_KEY : str
+
     @property
     def AsyncDataBaseUrl(self):
         """Url для подключения к базе данных"""

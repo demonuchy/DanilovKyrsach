@@ -59,6 +59,18 @@ async def accounting_token(key : str, value : dict, ttl : int = cfg.JWT_ACCESS_E
         logger.debug(f"Token saved to Redis: {key}, TTL: {ttl}s")
         return bool(result)
 
+async def delete_token(*key : str) -> None:
+    """
+    Удаление токеноав 
+    Args:
+        key : ключ 
+    Returns:
+        None
+    """
+    async with redis_session() as client:
+        result = await client.delete(*key)
+        logger.debug(f"Token delete to Redis")
+        return bool(result)
 
 async def get_token(key) -> dict:
     """

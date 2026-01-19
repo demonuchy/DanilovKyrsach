@@ -1,12 +1,12 @@
 import uuid
 import enum
-from typing import List, Optional
+from typing import List, Optional, Set
 from decimal import Decimal
 from datetime import datetime
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from sqlalchemy import (String, DateTime, BigInteger, UUID, 
-                        Enum, ForeignKey,  func, Text, Boolean, 
-                        CheckConstraint, text, Numeric)
+                        Enum, ForeignKey, func, Text, Boolean, 
+                        CheckConstraint, text, Numeric, UniqueConstraint)
 
 from .base import RecipeBase
 
@@ -15,152 +15,123 @@ class Profile(RecipeBase):
     __tablename__ = 'profiles'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+
     user_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=True)
+    mail: Mapped[str] = mapped_column(String(50), nullable=False, unique=True) 
     
-    recipes: Mapped[List['Recipe']] = relationship(
-        'Recipe', 
-        back_populates='profile',
-        cascade='all, delete-orphan',
-        lazy='dynamic'  
-    )
+    recipes: Mapped[List['Recipe']] = relationship('Recipe', back_populates='profile', cascade='all, delete-orphan', lazy='dynamic')
     
-    @property
-    def recipe_count(self) -> int:
-        return len(self.recipes) if self.recipes else 0
+    favorite_recipes: Mapped[List['Recipe']] = relationship('Recipe',secondary='favorites', back_populates='favorited_by_profiles', lazy='dynamic',viewonly=True)
+    favorites: Mapped[List['Favorite']] = relationship('Favorite',back_populates='profile',cascade='all, delete-orphan',lazy='dynamic')
+
+
+class Favorite(RecipeBase):
+    """Ассоциативная таблица для связи многие-ко-многим между Profile и Recipe"""
+    __tablename__ = 'favorites'
+
+    profile_id: Mapped[int] = mapped_column(ForeignKey('recipe.profiles.id', ondelete='CASCADE'), primary_key=True, nullable=False, index=True)
+    profile: Mapped['Profile'] = relationship('Profile', back_populates='favorites')
+
+    recipe_id: Mapped[int] = mapped_column(ForeignKey('recipe.recipes.id', ondelete='CASCADE'), primary_key=True, nullable=False, index=True)    
+    recipe: Mapped['Recipe'] = relationship('Recipe', back_populates='favorites')
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),server_default=func.now(),nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),server_default=func.now(),onupdate=func.now(),nullable=False)
+    
+    order_index: Mapped[int] = mapped_column(default=0,nullable=False,comment="Порядок рецептов в избранном")
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="Заметки пользователя к рецепту в избранном")
+    
+    def __repr__(self):
+        return f"<Favorite profile={self.profile_id} recipe={self.recipe_id}>"
+
+
+class Tag(RecipeBase):
+    __tablename__ = 'tags'
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    slug: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    category: Mapped[Optional[str]] = mapped_column(String(30), nullable=True, index=True)
+    description: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
+    
+    is_system: Mapped[bool] = mapped_column(default=False)
+    is_active: Mapped[bool] = mapped_column(default=True)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    recipe_associations: Mapped[List['RecipeTag']] = relationship('RecipeTag',back_populates='tag',cascade='all, delete-orphan')
+
+
+class RecipeTag(RecipeBase):
+    """Ассоциативная таблица для связи многие-ко-многим между Recipe и Tag"""
+    __tablename__ = 'recipe_tags'
+
+    recipe_id: Mapped[int] = mapped_column(ForeignKey('recipe.recipes.id', ondelete='CASCADE'), primary_key=True, nullable=False)
+    tag_id: Mapped[int] = mapped_column(ForeignKey('recipe.tags.id', ondelete='CASCADE'), primary_key=True, nullable=False)
+    
+    added_by: Mapped[Optional[int]] = mapped_column(BigInteger,ForeignKey('recipe.profiles.id', ondelete='SET NULL'), nullable=True)
+    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    
+    order_index: Mapped[int] = mapped_column(default=0)
+    
+    recipe: Mapped['Recipe'] = relationship('Recipe', back_populates='tag_associations')
+    tag: Mapped['Tag'] = relationship('Tag', back_populates='recipe_associations')
 
 
 class Recipe(RecipeBase):
     __tablename__ = 'recipes'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    
-    # ForeignKey к Profile
-    profile_id: Mapped[int] = mapped_column(
-        ForeignKey('recipe.profiles.id', ondelete='CASCADE'),
-        nullable=False,
-        index=True
-    )
-    
-    # Relationship к Profile (многие к одному)
-    profile: Mapped['Profile'] = relationship(
-        'Profile', 
-        back_populates='recipes',
-        lazy='joined'  # Часто нужен профиль с рецептом
-    )
-    
-    ingredient_associations: Mapped[List['RecipeIngredient']] = relationship(
-        'RecipeIngredient',
-        back_populates='recipe',
-        cascade='all, delete-orphan',
-        lazy='selectin'
-    )
 
-    @property
-    def ingredient_names(self) -> List[str]:
-        return [ing.name for ing in self.ingredients]
+    profile_id: Mapped[int] = mapped_column(ForeignKey('recipe.profiles.id', ondelete='CASCADE'),nullable=False,index=True)
+    profile: Mapped['Profile'] = relationship('Profile', back_populates='recipes',lazy='joined')
+
+    favorited_by_profiles: Mapped[List['Profile']] = relationship('Profile',secondary='favorites',  back_populates='favorite_recipes',lazy='dynamic',viewonly=True)
+    favorites: Mapped[List['Favorite']] = relationship('Favorite',back_populates='recipe',cascade='all, delete-orphan', lazy='dynamic')
+
+    ingredient_associations: Mapped[List['RecipeIngredient']] = relationship('RecipeIngredient',back_populates='recipe',cascade='all, delete-orphan',lazy='selectin')
+    tag_associations: Mapped[List['RecipeTag']] = relationship('RecipeTag',back_populates='recipe',cascade='all, delete-orphan',lazy='selectin')
+
     
-    @property
-    def author_name(self) -> str:
-        return self.profile.name if self.profile else "Unknown"
+    def __repr__(self):
+        return f"<Recipe id={self.id} title='{self.title}'>"
 
 
 class Ingredient(RecipeBase):
     __tablename__ = 'ingredients'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     
-    recipe_associations: Mapped[List['RecipeIngredient']] = relationship(
-        'RecipeIngredient',
-        back_populates='ingredient',
-        cascade='all, delete-orphan'
-    )
+    recipe_associations: Mapped[List['RecipeIngredient']] = relationship('RecipeIngredient',back_populates='ingredient',cascade='all, delete-orphan', lazy='dynamic')
     
-    @property
-    def recipe_count(self) -> int:
-        return len(self.recipes) if self.recipes else 0
-
 
 class RecipeIngredient(RecipeBase):
+    """Ассоциативная таблица для связи многие-ко-многим между Recipe и Ingredient"""
     __tablename__ = 'recipe_ingredients'
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    recipe_id: Mapped[int] = mapped_column(ForeignKey('recipe.recipes.id', ondelete='CASCADE'),primary_key=True,nullable=False)    
+    ingredient_id: Mapped[int] = mapped_column(ForeignKey('recipe.ingredients.id', ondelete='CASCADE'),primary_key=True,nullable=False)    
 
-    # составной первичный ключ вместо отдельного id
-    recipe_id: Mapped[int] = mapped_column(
-        ForeignKey('recipe.recipes.id', ondelete='CASCADE'),
-     
-    )
+    recipe: Mapped['Recipe'] = relationship('Recipe', back_populates='ingredient_associations')    
+    ingredient: Mapped['Ingredient'] = relationship('Ingredient', back_populates='recipe_associations')   
+ 
+    quantity: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 3),nullable=True,comment="Количество ингредиента")    
+    unit: Mapped[Optional[str]] = mapped_column(String(20),nullable=True,comment="Единица измерения (г, мл, шт, ст.л., ч.л. и т.д.)")    
+    order: Mapped[Optional[int]] = mapped_column(default=0,nullable=True,comment="Порядок ингредиентов в рецепте")    
+    preparation_note: Mapped[Optional[str]] = mapped_column(String(200),nullable=True,comment="Способ подготовки (нарезать, натереть и т.д.)")
+    is_optional: Mapped[bool] = mapped_column(default=False,comment="Обязательный или опциональный ингредиент")    
+    group: Mapped[Optional[str]] = mapped_column(String(50),nullable=True,comment="Группа (для соуса, маринада, украшения)")    
+    state: Mapped[Optional[str]] = mapped_column(String(30),nullable=True,comment="Состояние ингредиента")    
+    temperature: Mapped[Optional[str]] = mapped_column(String(30),nullable=True,comment="Температура ингредиента")  
 
-    ingredient_id: Mapped[int] = mapped_column(
-        ForeignKey('recipe.ingredients.id', ondelete='CASCADE'),
-     
-    )
-    
-    recipe: Mapped['Recipe'] = relationship(
-        'Recipe', 
-        back_populates='ingredient_associations'
-    )
-    ingredient: Mapped['Ingredient'] = relationship(
-        'Ingredient', 
-        back_populates='recipe_associations'
-    )
-
-    quantity: Mapped[Optional[Decimal]] = mapped_column(
-        Numeric(10, 3),  # 10 цифр, 3 после запятой
-        nullable=True,
-        comment="Количество ингредиента"
-    )
-    
-    # Единица измерения
-    unit: Mapped[Optional[str]] = mapped_column(
-        String(20),
-        nullable=True,
-        comment="Единица измерения (г, мл, шт, ст.л., ч.л. и т.д.)"
-    )
-    
-    # Порядок в рецепте (для пошагового отображения)
-    order: Mapped[Optional[int]] = mapped_column(
-        default=0,
-        nullable=True,
-        comment="Порядок ингредиентов в рецепте"
-    )
-    
-    # Дополнительные указания (нарезать кубиками, мелко порубить и т.д.)
-    preparation_note: Mapped[Optional[str]] = mapped_column(
-        String(200),
-        nullable=True,
-        comment="Способ подготовки (нарезать, натереть и т.д.)"
-    )
-
-    is_optional: Mapped[bool] = mapped_column(
-        default=False,
-        comment="Обязательный или опциональный ингредиент"
-    )
-    
-    # Группа ингредиентов (для соуса, маринада и т.д.)
-    group: Mapped[Optional[str]] = mapped_column(
-        String(50),
-        nullable=True,
-        comment="Группа (для соуса, маринада, украшения)"
-    )
-    
-    # Внешний вид/состояние (свежий, замороженный, сушеный)
-    state: Mapped[Optional[str]] = mapped_column(
-        String(30),
-        nullable=True,
-        comment="Состояние ингредиента"
-    )
-    
-    # Температура (комнатная, охлажденный и т.д.)
-    temperature: Mapped[Optional[str]] = mapped_column(
-        String(30),
-        nullable=True,
-        comment="Температура ингредиента"
-    )
-    
     def __repr__(self):
         return f"<RecipeIngredient recipe={self.recipe_id} ingredient={self.ingredient_id}>"
