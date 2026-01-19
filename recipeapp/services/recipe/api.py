@@ -1,9 +1,9 @@
-
-from fastapi import APIRouter, status, Header, Depends
-from fastapi.responses import JSONResponse, Response
+from fastapi import APIRouter, status, Header, Query
+from fastapi.responses import JSONResponse
 from fastapi.requests import Request
 
-from schema import RecipeFilterRequest
+
+from schema import CreateRecipeRequest
 from depends import ServiceDep
 from shared.depends import errors
 from shared.logger.logger import logger
@@ -16,19 +16,29 @@ router = APIRouter(prefix="/api/v1/recipes")
 
 
 @router.post("")
-async def create_recipe():
+async def create_recipe(data : CreateRecipeRequest, service : ServiceDep, user_id = Header(..., alias="X-User-Id")):
     """создать рецепт"""
-
+    await service.create_recipe(user_id=user_id, **data.model_dump())
+    return JSONResponse(
+        content={
+            "detail" : "ok", 
+        },
+        status_code=status.HTTP_201_CREATED
+    )
 
 @router.get("")
-async def get_recipes(ingredient_name : list, tag_name : list, service : ServiceDep):
+async def get_recipes(
+    service : ServiceDep, 
+    ingredient_name : list = Query(None), 
+    tag_name : list = Query(None) 
+    ):
     """получить рецепты по фильтрам"""
     recipes = await service.get_recipes_by_ingredient_name(ing_name=ingredient_name, tag_name=tag_name)
     return JSONResponse(
         content={
             "detail" : "ok", 
             "data" : {
-                "recipes" : {recipes}
+                "recipes" : recipes
                 }
         },
         status_code=status.HTTP_200_OK
@@ -43,7 +53,7 @@ async def get_recipe(recipe_id : int, service : ServiceDep):
         content={
             "detail" : "ok", 
             "data" : {
-                "recipe" : {recipe}
+                "recipe" : recipe
                 }
         },
         status_code=status.HTTP_200_OK
@@ -51,7 +61,7 @@ async def get_recipe(recipe_id : int, service : ServiceDep):
 
 
 @router.put("/{recipe_id}")
-async def update_recipe(recipe_id : int, ingredients : list, service : ServiceDep):
+async def update_recipe(recipe_id : int, service : ServiceDep, ingredients : list = Query(None)):
     """Обновить рецепт"""
     await service.update_recipe(recipe_id, ingredients)
     return JSONResponse(

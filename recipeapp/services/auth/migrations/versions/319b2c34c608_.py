@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 1f6501abe83b
+Revision ID: 319b2c34c608
 Revises:
-Create Date: 2026-01-10 20:59:38.658943
+Create Date: 2026-01-19 15:36:19.100216
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "1f6501abe83b"
+revision: str = "319b2c34c608"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -28,6 +28,7 @@ def upgrade() -> None:
         sa.Column("mail", sa.String(), nullable=True),
         sa.Column("hash_password", sa.String(), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False),
+        sa.Column("is_admin", sa.Boolean(), nullable=False),
         sa.Column("last_login", sa.DateTime(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
@@ -40,9 +41,9 @@ def upgrade() -> None:
     op.create_table(
         "user_sessions",
         sa.Column("id", sa.BigInteger(), nullable=False),
-        sa.Column("device_id", sa.String(length=50), nullable=False),
-        sa.Column("device_name", sa.String(length=30), nullable=False),
-        sa.Column("ip_addres", sa.String(length=15), nullable=False),
+        sa.Column("device_id", sa.String(), nullable=False),
+        sa.Column("device_name", sa.String(), nullable=False),
+        sa.Column("ip_addres", sa.String(), nullable=False),
         sa.Column("refresh_jti", sa.UUID(), nullable=False),
         sa.Column("last_activity", sa.DateTime(), nullable=False),
         sa.Column("is_block", sa.Boolean(), nullable=False),

@@ -2,7 +2,7 @@ import pytest
 import httpx
 import asyncio
 
-host = "http://127.0.0.1:8001/api/v1/auth"
+host = "http://127.0.0.1:8080/api/v1/auth"
 
 
 @pytest.fixture

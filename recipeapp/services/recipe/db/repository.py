@@ -1,6 +1,6 @@
 from typing import List 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, distinct, func, or_
+from sqlalchemy import select, distinct, func, or_, and_
 from sqlalchemy.orm import joinedload, selectinload, aliased
 
 from .models import Profile, Recipe, Ingredient, RecipeIngredient, Tag, RecipeTag
@@ -17,80 +17,48 @@ class ProfileRepository(BaseRepository[Profile]):
 class RecipeRepository(BaseRepository[Recipe]):
     def __init__(self, session : AsyncSession):
         super().__init__(session=session, model = Recipe)
-        self._stmt = None
-    
-    @property
-    def stmt(self):
-        return self._stmt
-    
-    def _filter_by_any_ingredient_names(self, names: List[str]):
-        """Фильтр по названиям ингредиентов (достаточно ЛЮБОГО)"""
-        if not names:
-            return self
-        subq = select(RecipeIngredient.recipe_id).join(
-            Ingredient, RecipeIngredient.ingredient_id == Ingredient.id
-        ).where(
-            or_(*[Ingredient.name.ilike(f"%{name}%") for name in names])
-        ).distinct().subquery()
-        return aliased(subq, name="ing_any_filter")
-    
-    def _filter_by_ingredient_names(self, names: List[str]):
-        """Фильтр по названиям ингредиентов (должны быть ВСЕ)"""
-        if not names:
-            return self
-        subq = select(RecipeIngredient.recipe_id).join(
-            Ingredient, RecipeIngredient.ingredient_id == Ingredient.id
-        ).where(
-            or_(*[Ingredient.name.ilike(f"%{name}%") for name in names])
-        ).group_by(
-            RecipeIngredient.recipe_id
-        ).having(
-            func.count(distinct(Ingredient.id)) == len(names)
-        ).subquery()
-        return aliased(subq, name="ing_filter")
 
-    
-    def _filter_by_any_tag_names(self, names: List[str]):
-        """Фильтр по названиям тегов (достаточно ЛЮБОГО)"""
-        if not names:
-            return self
-        subq = select(RecipeTag.recipe_id).join(
-            Tag, RecipeTag.tag_id == Tag.id
-        ).where(
-            or_(*[Tag.name.ilike(f"%{name}%") for name in names])
-        ).distinct().subquery()
-        return aliased(subq, name="tag_any_filter")
+    async def get_recipes_by_ingredients_with_relations_and(self, ingredient_names, tag_names):
+        stmt = select(Recipe).options(
+            selectinload(Recipe.profile),
+            selectinload(Recipe.ingredient_associations).selectinload(RecipeIngredient.ingredient),
+            selectinload(Recipe.tag_associations).selectinload(RecipeTag.tag),
+        )
+        if ingredient_names:
+            ingredient_subquery = (
+                select(RecipeIngredient.recipe_id)
+                .join(Ingredient, RecipeIngredient.ingredient_id == Ingredient.id)
+                .where(or_(*[Ingredient.name.ilike(f"%{name}%") for name in ingredient_names]))
+                .group_by(RecipeIngredient.recipe_id)
+                .having(func.count(distinct(RecipeIngredient.ingredient_id)) >= len(ingredient_names))
+            ).subquery()
+            stmt = stmt.where(Recipe.id.in_(select(ingredient_subquery.c.recipe_id)))
 
-    def _filter_by_tag_names(self, names: List[str]):
-        """Фильтр по названиям тегов (должны быть ВСЕ)"""
-        if not names:
-            return self
-        subq = select(RecipeTag.recipe_id).join(
-            Tag, RecipeTag.tag_id == Tag.id
-        ).where(
-            or_(*[Tag.name.ilike(f"%{name}%") for name in names])
-        ).group_by(
-            RecipeTag.recipe_id
-        ).having(
-            func.count(distinct(Tag.id)) == len(names)
-        ).subquery()
-        return aliased(subq, name="tag_filter")
+        if tag_names:
+            tag_subquery = (
+                select(RecipeTag.recipe_id)
+                .join(Tag, RecipeTag.tag_id == Tag.id)
+                .where(or_(*[Tag.name.ilike(f"%{name}%") for name in tag_names]))
+                .group_by(RecipeTag.recipe_id)
+                .having(func.count(distinct(RecipeTag.tag_id)) >= len(tag_names))
+            ).subquery()
+            
+            stmt = stmt.where(Recipe.id.in_(select(tag_subquery.c.recipe_id)))
+        
+        stmt = stmt.distinct()
+        result = await self.session.execute(stmt)
+        return result.unique().scalars().all()
     
-    def _paginate(self, limit: int = 50, offset: int = 0):
-        """Добавить пагинацию"""
-        self._stmt = self._stmt.limit(limit).offset(offset)
-        return self
-
+    # recipe/repository.py
     async def get_recipes_by_ingredients_with_relations(self, ingredient_names, tag_names):
         """
         Поиск рецептов, содержащих указанные ингредиенты и теги
         С полной загрузкой всех связанных данных
         """
         stmt = select(Recipe).options(
-            selectinload(Recipe.profile),
-            selectinload(Recipe.ingredient_associations).selectinload(RecipeIngredient.ingredient),
-            selectinload(Recipe.tag_associations).selectinload(RecipeTag.tag),
-            selectinload(Recipe.favorites)
+            selectinload(Recipe.profile),  # Загружаем профиль
+            selectinload(Recipe.ingredient_associations).selectinload(RecipeIngredient.ingredient),  # Ингредиенты
+            selectinload(Recipe.tag_associations).selectinload(RecipeTag.tag),  # Теги
         )
         if ingredient_names:
             stmt = stmt.join(
@@ -100,32 +68,31 @@ class RecipeRepository(BaseRepository[Recipe]):
             ).where(
                 or_(*[Ingredient.name.ilike(f"%{name}%") for name in ingredient_names])
             )
-        if tag_names:
+        if tag_names: 
             stmt = stmt.join(
-                Recipe.tag_associations
+                Recipe.tag_associations, 
+                full=True
             ).join(
-                RecipeTag.tag
+                RecipeTag.tag, 
+                full=True
             ).where(
                 or_(*[Tag.name.ilike(f"%{name}%") for name in tag_names])
             )
         stmt = stmt.distinct()
         result = await self.session.execute(stmt)
-        return result.scalars().all()
+        return result.unique().scalars().all()
 
     async def get_by_id_with_ingredients(self, id : int):
-        stmt = select(Recipe).where(Recipe.id == id).options(
-            joinedload(Recipe.profile),
-            selectinload(
-                Recipe.ingredient_associations
-            ).joinedload(
-                RecipeIngredient.ingredient
-            ),
-            selectinload(
-                Recipe.tag_associations
-            ).joinedload(
-                RecipeTag.tag
-            )
-        )
+        stmt = select(Recipe
+        ).where(self.model.id == id
+        ).options(
+            selectinload(Recipe.profile),
+            selectinload(Recipe.ingredient_associations).selectinload(RecipeIngredient.ingredient),  
+            selectinload(Recipe.tag_associations).selectinload(RecipeTag.tag), 
+        ).join(Recipe.tag_associations,full=True
+        ).join(RecipeTag.tag,full=True
+        ).join(Recipe.ingredient_associations,full=True
+        ).join(RecipeIngredient.ingredient,full=True)
         result = await self.session.execute(stmt)
         recipe = result.unique().scalar_one_or_none()
         return recipe
@@ -148,18 +115,32 @@ class RecipeIngredientRepository(BaseRepository[RecipeIngredient]):
         return res
 
 
+class IngredientRepository(BaseRepository[Ingredient]):
+    def __init__(self, session : AsyncSession):
+        super().__init__(session=session, model = Ingredient)
+
+
+class TagRepository(BaseRepository[Tag]):
+    def __init__(self, session : AsyncSession):
+        super().__init__(session=session, model = Tag)
+    
+
 class RecipehUow(BaseUnitOfWork):
     
     # Добавляем анннотации просто для удобства разработки 
     # IDE будет подсказывать
     profile_repository : 'ProfileRepository'
     recipe_repository : 'RecipeRepository'
+    ingredient_repository : 'IngredientRepository'
+    tag_repository : 'TagRepository'
     recipe_ingredient_repository : 'RecipeIngredientRepository'
     recipe_tag_repository : 'RecipeTagRepository'
 
     def __init__(self):
-        super().__init__(session_factory=session_factory, schema="auth")
+        super().__init__(session_factory=session_factory, schema="recipe")
         self.add_repo("profile", ProfileRepository)
         self.add_repo("recipe", RecipeRepository)
         self.add_repo("recipe_ingredient", RecipeIngredientRepository)
         self.add_repo("recipe_tag", RecipeTagRepository)
+        self.add_repo("ingredient", IngredientRepository)
+        self.add_repo("tag", TagRepository)

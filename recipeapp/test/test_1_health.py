@@ -23,8 +23,3 @@ async def test_health_recipe():
         assert response.status_code == 200
 
 
-@pytest.mark.anyio
-async def test_health_admin():
-    async with httpx.AsyncClient() as client:
-        response = await client.get("http://127.0.0.1:8003/health")
-        assert response.status_code == 200

@@ -55,7 +55,7 @@ async def accounting_token(key : str, value : dict, ttl : int = cfg.JWT_ACCESS_E
     """
     async with redis_session() as client:
         value_json = json.dumps(value)
-        result = await client.setex(name=key, time=ttl, value=value_json)
+        result = await client.setex(name=key, time=ttl*60, value=value_json)
         logger.debug(f"Token saved to Redis: {key}, TTL: {ttl}s")
         return bool(result)
 

@@ -67,7 +67,8 @@ class AuthService(BaseUowService['AuthUow']):
         access_jti, access_token, refresh_jti, refresh_token = self._get_token_pair(
             user_id=user.id, 
             device_id=data.device_id, 
-            mail=user.mail
+            mail=user.mail,
+            is_admin=user.is_admin
         )
         logger.debug("Create user session...")
         user_session = await self.uow.session_repository.create(
@@ -108,7 +109,7 @@ class AuthService(BaseUowService['AuthUow']):
         logger.debug("checking if the user exists")
         user = await self.uow.user_repository.get_by_field("mail", data.mail)
         if not user or not is_password_valid(data.password, user.hash_password):
-            logger.warn("Unauthorized")
+            logger.warn("неверные учетные данные")
             raise HTTPException(
                 detail="Invalid credentials" , 
                 status_code=status.HTTP_401_UNAUTHORIZED
@@ -117,7 +118,8 @@ class AuthService(BaseUowService['AuthUow']):
         access_jti, access_token, refresh_jti, refresh_token = self._get_token_pair(
             user_id=user.id, 
             device_id=data.device_id, 
-            mail=user.mail
+            mail=user.mail,
+            is_admin=user.is_admin
         )
         logger.debug("checking if the session exists")
         current_session = await self.uow.session_repository.filter(user_id = user.id, device_id = data.device_id)
