@@ -98,11 +98,13 @@ class RecipeService(BaseUowService['RecipehUow']):
     @BaseUowService.transactional()
     async def update_recipe(self, recipe_id: int, ingredient_id : list[int], **values):
         logger.debug(f"Обновление рецепта {recipe_id}")
-        await self.uow.recipe_ingredient_repository.update(recipe_id=recipe_id, ingredient_id=ingredient_id, **values)
+        await self.uow.recipe_ingredient_repository.update(recipe_id=int(recipe_id), ingredient_id=int(ingredient_id), **values)
         logger.debug("Рецепт обновлен")
 
     @BaseUowService.transactional()
-    async def add_favorite(self, recipe_id : int , user_id):
+    async def add_favorite(self, recipe_id : int , user_id : int):
+        user_id = int(user_id)
+        recipe_id = int(recipe_id)
         logger.debug(f"Добавление рецепта в избранное {recipe_id}")
         favorite = await self.uow.favorite_repository.filter(profile_id = user_id, recipe_id = recipe_id)
         if favorite: 
@@ -117,15 +119,16 @@ class RecipeService(BaseUowService['RecipehUow']):
     @BaseUowService.transactional()
     async def delete_favorite(self, recipe_id : int , user_id):
         logger.debug(f"Удаление рецепта из избранного {recipe_id}")
-        await self.uow.favorite_repository.delete(profile_id = user_id, recipe_id = recipe_id)
+        await self.uow.favorite_repository.delete(profile_id = int(user_id), recipe_id = int(recipe_id))
         logger.debug("рецепт удален")
 
     @BaseUowService.transactional()
     async def get_favorite(self, user_id : int):
         logger.debug(f"Получение избранного")
-        favorites = await self.uow.favorite_repository.get_favorite_recipes(profile_id=user_id)
+        favorites = await self.uow.favorite_repository.get_favorite_recipes(profile_id=int(user_id))
         logger.debug("сериализуем ...")
         serialize_favorites = [FavoriteResponse.model_validate(favorite).model_dump() for favorite in favorites]
+        logger.debug(f"получили рецепты {serialize_favorites}")
         return serialize_favorites
        
 

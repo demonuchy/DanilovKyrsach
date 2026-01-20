@@ -1,0 +1,320 @@
+<mxfile host="app.diagrams.net" modified="2024-01-20T00:00:00.000Z" agent="Mozilla/5.0" version="23.1.4" type="device">
+  <diagram name="DFD - Кулинарный помощник" id="xRb-Kf92j-V_eEJLmhWS">
+    <mxGraphModel dx="1662" dy="1044" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Контекстная диаграмма (Уровень 0) -->
+        <mxCell id="context_diagram" value="DFD Уровень 0 - Контекстная диаграмма" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="50" y="30" width="727" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- Внешние сущности -->
+        <mxCell id="user" value="Пользователь" style="shape=actor;html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="100" y="150" width="60" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="email_service" value="Email сервис" style="shape=actor;html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="650" y="150" width="80" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- Основная система -->
+        <mxCell id="main_system" value="Система Кулинарный Помощник" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="100" width="200" height="200" as="geometry" />
+        </mxCell>
+        
+        <!-- Потоки данных -->
+        <mxCell id="flow1" value="Запросы на регистрацию/авторизацию" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="user" target="main_system">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="flow2" value="Email для подтверждения/восстановления" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="main_system" target="email_service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="flow3" value="CRUD операций с рецептами" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="user" target="main_system">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="120" y="230" as="sourcePoint" />
+            <mxPoint x="380" y="230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="flow4" value="Поиск рецептов по ингредиентам" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="user" target="main_system">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="260" as="sourcePoint" />
+            <mxPoint x="400" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="flow5" value="Ответы системы (рецепты, статусы)" style="endArrow=classic;html=1;rounded=0;endFill=0;" edge="1" parent="1" source="main_system" target="user">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="480" y="220" as="sourcePoint" />
+            <mxPoint x="180" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- DFD Уровень 1 -->
+        <mxCell id="level1_title" value="DFD Уровень 1 - Основные процессы" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="50" y="350" width="727" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- API Gateway -->
+        <mxCell id="api_gateway" value="API Gateway (Nginx)" style="shape=process;rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="50" y="450" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Процессы -->
+        <mxCell id="auth_process" value="Аутентификация пользователей" style="shape=process;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="200" y="400" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="recipe_manage" value="Управление рецептами" style="shape=process;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="200" y="500" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="search_process" value="Поиск рецептов" style="shape=process;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="200" y="600" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Хранилища данных -->
+        <mxCell id="db_users" value="База пользователей (PostgreSQL)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="400" y="380" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="redis_cache" value="Кэш сессий (Redis)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="400" y="480" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="db_recipes" value="База рецептов (PostgreSQL)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="400" y="580" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="elasticsearch" value="Поисковый индекс (Elasticsearch)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="550" y="580" width="140" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- RabbitMQ -->
+        <mxCell id="rabbitmq" value="Брокер сообщений (RabbitMQ)" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="600" y="400" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- Потоки данных уровня 1 -->
+        <mxCell id="f1" value="Все HTTP запросы" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="user" target="api_gateway">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="130" y="190" as="sourcePoint" />
+            <mxPoint x="110" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="f2" value="Публичные запросы" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="110" y="480" as="sourcePoint" />
+            <mxPoint x="200" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="f3" value="Запросы с токеном" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="170" y="480" as="sourcePoint" />
+            <mxPoint x="270" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="f4" value="Верификация токена" style="endArrow=classic;html=1;rounded=0;dashed=1;" edge="1" parent="1" source="api_gateway" target="auth_process">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="110" y="480" as="sourcePoint" />
+            <mxPoint x="200" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="f5" value="Регистрация/логин" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="auth_process" target="db_users">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="f6" value="Сохранение сессии" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="auth_process" target="redis_cache">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="430" as="sourcePoint" />
+            <mxPoint x="400" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="f7" value="Создание рецепта" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="recipe_manage" target="db_recipes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="f8" value="Индексация для поиска" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="recipe_manage" target="elasticsearch">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="530" as="sourcePoint" />
+            <mxPoint x="550" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="f9" value="Поисковый запрос" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="search_process" target="elasticsearch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="f10" value="Детали рецепта" style="endArrow=classic;html=1;rounded=0;endFill=0;" edge="1" parent="1" source="db_recipes" target="search_process">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520" y="620" as="sourcePoint" />
+            <mxPoint x="340" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="f11" value="Событие: новый пользователь" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="auth_process" target="rabbitmq">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="400" as="sourcePoint" />
+            <mxPoint x="600" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="f12" value="Подписка на события" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="rabbitmq" target="recipe_manage">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="600" y="480" as="sourcePoint" />
+            <mxPoint x="340" y="500" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="f13" value="Ответы API" style="endArrow=classic;html=1;rounded=0;endFill=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="110" y="480" as="sourcePoint" />
+            <mxPoint x="130" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- DFD Уровень 2 - Детализация сервиса рецептов -->
+        <mxCell id="level2_title" value="DFD Уровень 2 - Сервис рецептов" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="50" y="700" width="727" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- Подпроцессы сервиса рецептов -->
+        <mxCell id="recipe_crud" value="CRUD рецептов" style="shape=process;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="100" y="750" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="ingredient_mgmt" value="Управление ингредиентами" style="shape=process;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="100" y="850" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="tag_mgmt" value="Управление тегами" style="shape=process;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="100" y="950" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="favorites_mgmt" value="Избранное" style="shape=process;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1050" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Хранилища данных сервиса рецептов -->
+        <mxCell id="db_recipes_detailed" value="recipes" style="shape=cylinder2;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="300" y="750" width="80" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="db_ingredients" value="ingredients" style="shape=cylinder2;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="300" y="850" width="80" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="db_tags" value="tags" style="shape=cylinder2;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="300" y="950" width="80" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="db_favorites" value="favorites" style="shape=cylinder2;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="300" y="1050" width="80" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="db_recipe_ingredients" value="recipe_ingredients" style="shape=cylinder2;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="420" y="800" width="100" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="db_recipe_tags" value="recipe_tags" style="shape=cylinder2;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="420" y="900" width="100" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Потоки данных уровня 2 -->
+        <mxCell id="flow20" value="Запрос на создание/чтение" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="340" y="550" />
+              <mxPoint x="340" y="780" />
+            </Array>
+            <mxPoint x="340" y="550" as="sourcePoint" />
+            <mxPoint x="160" y="780" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="flow21" value="Сохранение рецепта" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="recipe_crud" target="db_recipes_detailed">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="flow22" value="Привязка ингредиентов" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="ingredient_mgmt" target="db_recipe_ingredients">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="flow23" value="Справочник ингредиентов" style="endArrow=classic;html=1;rounded=0;endFill=0;" edge="1" parent="1" source="db_ingredients" target="ingredient_mgmt">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="flow24" value="Привязка тегов" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="tag_mgmt" target="db_recipe_tags">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="flow25" value="Добавление в избранное" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="favorites_mgmt" target="db_favorites">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Легенда -->
+        <mxCell id="legend" value="Легенда DFD" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="550" y="750" width="200" height="200" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="legend_process" value="Процесс" style="shape=process;rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="570" y="780" width="60" height="30" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="legend_external" value="Внешняя сущность" style="shape=actor;html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="570" y="820" width="60" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="legend_store" value="Хранилище данных" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="570" y="870" width="60" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="legend_flow" value="Поток данных" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="570" y="920" as="sourcePoint" />
+            <mxPoint x="630" y="920" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="legend_text_process" value=": Преобразование данных" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="640" y="790" width="100" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="legend_text_external" value=": Источник/приемник данных" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="640" y="830" width="100" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="legend_text_store" value=": Хранение информации" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="640" y="880" width="100" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="legend_text_flow" value=": Передача данных" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="640" y="920" width="100" height="20" as="geometry" />
+        </mxCell>
+        
+        <!-- Аннотации -->
+        <mxCell id="annotation1" value="API Gateway проверяет JWT токены через Auth Service перед маршрутизацией запросов" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="50" y="520" width="120" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="annotation2" value="RabbitMQ обеспечивает асинхронную коммуникацию между микросервисами" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="600" y="490" width="120" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="annotation3" value="Elasticsearch обеспечивает полнотекстовый поиск по рецептам" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="550" y="670" width="140" height="40" as="geometry" />
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -15,7 +15,7 @@ async def client():
 def user_data():
     """Возвращает тестовые данные пользователя"""
     return {
-        "mail": "demonuchy@gmail.com",
+        "mail": "ivan@gmail.com",
         "password": "TestPassword123!",
     }
 
@@ -126,6 +126,28 @@ async def test_search_recipes(client, auth_tokens):
     assert response.status_code == 200
 
     response_data = response.json()
+
+    response = await client.put(
+        url=f"{HOST}/recipes/{response_data['data']['recipes'][0].get('id')}",
+        headers={"Authorization": f"Bearer {auth_tokens['access_token']}"},
+        params={
+            "ingredient_id" : response_data['data']['recipes'][0]['ingredient_associations'][0]['ingredient'].get('id'), 
+            "quantity" : 5, "unit" : "г." 
+            }
+        )
+    assert response.status_code == 200
+
+    response = await client.post(
+        url=f"{HOST}/recipes/favorite/{response_data['data']['recipes'][0].get('id')}",
+        headers={"Authorization": f"Bearer {auth_tokens['access_token']}"},
+        )
+    assert response.status_code == 201
+
+    response = await client.get(
+        url=f"{HOST}/recipes/favorite",
+        headers={"Authorization": f"Bearer {auth_tokens['access_token']}"},
+    )
+    assert response.status_code == 200
 
     response = await client.get(
         url=f"{HOST}/recipes/{response_data['data']['recipes'][0].get('id')}",

@@ -64,15 +64,16 @@ async def get_recipe(recipe_id : int, service : ServiceDep):
 async def update_recipe(request : Request, recipe_id : int, service : ServiceDep):
     """Обновить рецепт"""
     query_params = dict(request.query_params)
-    # Преобразуем значения при необходимости
     params = {}
     for key, value in query_params.items():
-        # Пытаемся преобразовать в int если это число
         if value.isdigit():
             params[key] = int(value)
         else:
             params[key] = value
-    await service.update_recipe(recipe_id=recipe_id, **params)
+    logger.debug(f"Параметры {params}")
+    ingredient_id=params.pop('ingredient_id')
+    logger.debug(f"Параметры перед отправкой в сервис{params}")
+    await service.update_recipe(recipe_id=recipe_id, ingredient_id=ingredient_id, **params)
     return JSONResponse(
         content={
             "detail" : "ok", 

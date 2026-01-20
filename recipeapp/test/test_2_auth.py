@@ -16,7 +16,7 @@ async def client():
 def user_data():
     """Возвращает тестовые данные пользователя"""
     return {
-        "mail": "demonuchy@gmail.com",
+        "mail": "ivan@gmail.com",
         "password": "TestPassword123!",
     }
 
@@ -25,7 +25,7 @@ def user_data():
 def wrong_pass_user_data():
     """Возвращает тестовые данные пользователя"""
     return {
-        "mail": "demonuchy@gmail.com",
+        "mail": "ivan@gmail.com",
         "password": "WrongTestPassword123!",
     }
 
@@ -34,7 +34,7 @@ def wrong_pass_user_data():
 def wrong_mail_user_data():
     """Возвращает тестовые данные пользователя"""
     return {
-        "mail": "wrong_demonuchy@gmail.com",
+        "mail": "wrong_ivan@gmail.com",
         "password": "TestPassword123!",
     }
 
