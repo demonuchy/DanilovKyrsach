@@ -25,7 +25,10 @@ class Favorite(RecipeBase):
         primary_key=True, 
         nullable=False, 
         index=True
-    )    
+    )  
+
+    profile: Mapped['Profile'] = relationship('Profile')
+    recipe: Mapped['Recipe'] = relationship('Recipe', lazy='selectin')  
     
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -59,7 +62,14 @@ class Profile(RecipeBase):
     __tablename__ = 'profiles'
     user_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False, index=True, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=True)
-    mail: Mapped[str] = mapped_column(String(50), nullable=False, unique=True) 
+    mail: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+
+    favorites: Mapped[List['Favorite']] = relationship(
+        'Favorite',
+        back_populates='profile',
+        lazy='selectin',
+        cascade="all, delete-orphan"
+    ) 
 
 
 class Tag(RecipeBase):
@@ -100,7 +110,7 @@ class RecipeTag(RecipeBase):
         nullable=False
     )
 
-    recipe: Mapped['Recipe'] = relationship('Recipe', back_populates='tag_associations')
+    recipe: Mapped['Recipe'] = relationship('Recipe', back_populates='tag_associations', passive_deletes=True)
     tag: Mapped['Tag'] = relationship('Tag')
     
     added_by: Mapped[Optional[int]] = mapped_column(
@@ -131,12 +141,16 @@ class Recipe(RecipeBase):
     ingredient_associations: Mapped[List['RecipeIngredient']] = relationship(
         'RecipeIngredient',
         back_populates='recipe',
-        lazy='selectin'  # Автоматическая загрузка
+        lazy='selectin',
+        cascade="all, delete-orphan",
+        passive_deletes=True 
     )
     tag_associations: Mapped[List['RecipeTag']] = relationship(
         'RecipeTag',
         back_populates='recipe',
-        lazy='selectin'  # Автоматическая загрузка
+        lazy='selectin',
+        cascade="all, delete-orphan", 
+        passive_deletes=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -214,8 +228,7 @@ class RecipeIngredient(RecipeBase):
         nullable=True,
         comment="Температура ингредиента"
     )  
-
-    recipe: Mapped['Recipe'] = relationship('Recipe', back_populates='ingredient_associations')
+    recipe: Mapped['Recipe'] = relationship('Recipe', back_populates='ingredient_associations', passive_deletes=True)
     ingredient: Mapped['Ingredient'] = relationship('Ingredient')
 
     def __repr__(self):

@@ -61,9 +61,18 @@ async def get_recipe(recipe_id : int, service : ServiceDep):
 
 
 @router.put("/{recipe_id}")
-async def update_recipe(recipe_id : int, service : ServiceDep, ingredients : list = Query(None)):
+async def update_recipe(request : Request, recipe_id : int, service : ServiceDep):
     """Обновить рецепт"""
-    await service.update_recipe(recipe_id, ingredients)
+    query_params = dict(request.query_params)
+    # Преобразуем значения при необходимости
+    params = {}
+    for key, value in query_params.items():
+        # Пытаемся преобразовать в int если это число
+        if value.isdigit():
+            params[key] = int(value)
+        else:
+            params[key] = value
+    await service.update_recipe(recipe_id=recipe_id, **params)
     return JSONResponse(
         content={
             "detail" : "ok", 
@@ -84,16 +93,48 @@ async def delete_recipe(recipe_id : int, service : ServiceDep, user_id = Header(
     )
 
 
-@router.post("/{recipe_id}/favorite")
-async def add_favorite():
+@router.post("/favorite/{recipe_id}")
+async def add_favorite(
+    service : ServiceDep, 
+    recipe_id : int,
+    user_id = Header(..., alias="X-User-Id")
+    ):
     """Добавить в избранное"""
+    await service.add_favorite(recipe_id, user_id)
+    return JSONResponse(
+        content={"detail" : "ok"}, 
+        status_code=status.HTTP_201_CREATED
+        )
 
 
-@router.delete("/{recipe_id}/favorite")
-async def delete_favotite():
+@router.delete("/favorite/{recipe_id}")
+async def delete_favotite(
+    service : ServiceDep,
+    recipe_id : int,
+    user_id = Header(..., alias="X-User-Id")
+    ):
     """Удалить из избранного"""
+    await service.delete_favorite(recipe_id, user_id)
+    return JSONResponse(
+        content={"detail" : "ok"}, 
+        status_code=status.HTTP_200_OK
+        )
 
 
-@router.get("/{recipe_id}/favorite")
-async def get_favorite():
+@router.get("/favorite")
+async def get_favorite(
+    service : ServiceDep, 
+    user_id = Header(..., alias="X-User-Id")
+    ):
     """Получить избранное"""
+    favorites = await service.get_favorite(user_id)
+    return JSONResponse(
+        content={
+            "detail" : "ok", 
+            "data" : {
+                "favorites" : favorites
+                }
+            }, 
+        status_code=status.HTTP_200_OK
+        )
+

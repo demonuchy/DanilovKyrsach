@@ -1,15 +1,14 @@
 import pytest
 import httpx
-import asyncio
 
-host = "http://127.0.0.1:8080/api/v1"
+HOST = "http://127.0.0.1:8080/api/v1"
 
 
 @pytest.fixture
 async def client():
     """Создает и закрывает HTTP клиент"""
     async with httpx.AsyncClient(base_url="http://localhost:8000") as client:
-        yield client  
+        yield client
 
 
 @pytest.fixture
@@ -20,118 +19,165 @@ def user_data():
         "password": "TestPassword123!",
     }
 
+
 @pytest.fixture
 def device_headers():
     """Возвращает заголовки устройства"""
     return {
         "X-Device-Id": "test-device-001",
         "X-Device-Name": "Test Device"
-        }
+    }
 
 
-@pytest.mark.anyio
-async def test_create_recipes(client, user_data, device_headers):
-
-    # Верные данные 
+@pytest.fixture
+async def auth_tokens(client, user_data, device_headers):
+    """Получает токены аутентификации"""
     response = await client.post(
-        url=f"{host}/auth/login",
+        url=f"{HOST}/auth/login",
         json=user_data,
         headers=device_headers
     )
     assert response.status_code == 200
-
+    
     response_data = response.json()
-    access_token = response_data["data"]["access_token"]
-    refresh_token = response_data["data"]["refresh_token"]
+    return {
+        "access_token": response_data["data"]["access_token"],
+        "refresh_token": response_data["data"]["refresh_token"]
+    }
 
-    # Create recipes
+
+@pytest.mark.anyio
+async def test_create_recipes(client, auth_tokens):
+    """Тест создания рецептов"""
+    
+    # Создание первого рецепта
     response = await client.post(
-        url=f"{host}/recipes",
+        url=f"{HOST}/recipes",
         json={
-            "title" : "Recipe 1", 
+            "title": "Recipe 1",
             "ingredients": [
-                    {"name":"курица"},
-                    {"name":"соль"}
+                {"name": "курица"},
+                {"name": "соль"}
             ],
-            "tags": [
-
-            ]
+            "tags": []
         },
-        headers={"Authorization" : f"Bearer {access_token}"}
+        headers={"Authorization": f"Bearer {auth_tokens['access_token']}"}
     )
     assert response.status_code == 201
-
-
+    
+    # Создание второго рецепта
     response = await client.post(
-        url=f"{host}/recipes",
+        url=f"{HOST}/recipes",
         json={
-            "title" : "Recipe 2", 
+            "title": "Recipe 2",
             "ingredients": [
-                    {"name":"курица"},
-                    {"name":"соль"},
-                    {"name" :"капуста"}
+                {"name": "соль"},
+                {"name": "капуста"}
             ],
             "tags": [
-                {"name" : "быстро"}
+                {"name": "быстро"}
             ]
         },
-        headers={"Authorization" : f"Bearer {access_token}"}
+        headers={"Authorization": f"Bearer {auth_tokens['access_token']}"}
     )
     assert response.status_code == 201
-
-
+    
+    # Создание третьего рецепта
     response = await client.post(
-        url=f"{host}/recipes",
+        url=f"{HOST}/recipes",
         json={
-            "title" : "Recipe 3", 
+            "title": "Recipe 3",
             "ingredients": [
-                    {"name":"курица"},
-                    {"name":"яйца"}
+                {"name": "курица"},
+                {"name": "яйца"}
             ],
             "tags": [
-                {"name" : "горячее"}
+                {"name": "горячее"}
             ]
         },
-        headers={"Authorization" : f"Bearer {access_token}"}
+        headers={"Authorization": f"Bearer {auth_tokens['access_token']}"}
     )
     assert response.status_code == 201
 
 
 @pytest.mark.anyio
-async def test_search_recipes(client, user_data, device_headers):
-    response = await client.post(
-        url=f"{host}/auth/login",
-        json=user_data,
-        headers=device_headers
-    )
-    assert response.status_code == 200
-
-    response_data = response.json()
-    access_token = response_data["data"]["access_token"]
-    refresh_token = response_data["data"]["refresh_token"]
-
+async def test_search_recipes(client, auth_tokens):
+    """Тест поиска и удаления рецептов"""
+    
+    # Поиск по ингредиенту "курица" и тегу "быстро"
     response = await client.get(
-        url=f"{host}/recipes",
+        url=f"{HOST}/recipes",
         params={
             "ingredient_name": ["курица"],
             "tag_name": ["быстро"]
         },
-        headers={"Authorization" : f"Bearer {access_token}"}
+        headers={"Authorization": f"Bearer {auth_tokens['access_token']}"}
     )
-    assert response.status_code == 200
-
-
+    assert response.status_code == 404
+    
+    # Поиск по ингредиентам "капуста" и "соль"
     response = await client.get(
-        url=f"{host}/recipes",
+        url=f"{HOST}/recipes",
         params={
-            "ingredient_name": ["курица", "яйца"],
+            "ingredient_name": ["капуста", "соль"],
         },
-        headers={"Authorization" : f"Bearer {access_token}"}
+        headers={"Authorization": f"Bearer {auth_tokens['access_token']}"}
     )
     assert response.status_code == 200
 
+    response_data = response.json()
+
     response = await client.get(
-        url=f"{host}/recipes/2",
-        headers={"Authorization" : f"Bearer {access_token}"}
+        url=f"{HOST}/recipes/{response_data['data']['recipes'][0].get('id')}",
+        headers={"Authorization": f"Bearer {auth_tokens['access_token']}"}
     )
     assert response.status_code == 200
+    
+    # Удаление найденных рецептов
+    for recipe in response_data['data']['recipes']:
+        response = await client.delete(
+            url=f"{HOST}/recipes/{recipe.get('id')}",
+            headers={"Authorization": f"Bearer {auth_tokens['access_token']}"}
+        )
+        assert response.status_code == 200
+    
+    # Поиск по ингредиенту "курица" и тегу "горячее"
+    response = await client.get(
+        url=f"{HOST}/recipes",
+        params={
+            "ingredient_name": ["курица"],
+            "tag_name": ["горячее"]
+        },
+        headers={"Authorization": f"Bearer {auth_tokens['access_token']}"}
+    )
+    assert response.status_code == 200
+
+
+    # Удаление найденных рецептов
+    response_data = response.json()
+    for recipe in response_data['data']['recipes']:
+        response = await client.delete(
+            url=f"{HOST}/recipes/{recipe.get('id')}",
+            headers={"Authorization": f"Bearer {auth_tokens['access_token']}"}
+        )
+        assert response.status_code == 200
+    
+    # Поиск только по ингредиенту "курица"
+    response = await client.get(
+        url=f"{HOST}/recipes",
+        params={
+            "ingredient_name": ["курица"],
+        },
+        headers={"Authorization": f"Bearer {auth_tokens['access_token']}"}
+    )
+    assert response.status_code == 200
+    
+    # Удаление найденных рецептов
+    response_data = response.json()
+    for recipe in response_data['data']['recipes']:
+        response = await client.delete(
+            url=f"{HOST}/recipes/{recipe.get('id')}",
+            headers={"Authorization": f"Bearer {auth_tokens['access_token']}"}
+        )
+        assert response.status_code == 200
+    

@@ -60,6 +60,22 @@ class RecipeResponse(BaseModel):
     def serialize_datetime(self, dt: datetime, _info):
         return dt.isoformat()
 
+
+
+class FavoriteResponse(BaseModel):
+    profile_id: int
+    recipe_id: int
+    profile: ProfileResponse
+    recipe: RecipeResponse
+    created_at: datetime
+    updated_at: datetime
+    order_index: int
+    notes: Optional[str]
+
+    @field_serializer('created_at', 'updated_at')
+    def serialize_datetime(self, dt: datetime, _info):
+        return dt.isoformat()
+
 class CreateRecipeRequest(BaseModel):
     title : str
     ingredients: list[dict[str, Any]]

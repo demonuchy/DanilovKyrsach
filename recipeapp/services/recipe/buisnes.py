@@ -1,7 +1,7 @@
 from typing import Callable, Tuple, Any, Optional
 from fastapi import HTTPException, status
 
-from schema import RecipeResponse
+from schema import RecipeResponse, FavoriteResponse
 from db.repository import RecipehUow
 
 from shared.service.base import BaseUowService
@@ -63,13 +63,14 @@ class RecipeService(BaseUowService['RecipehUow']):
     @BaseUowService.transactional()
     async def delete_recipe(self, user_id : int, recipe_id : int):
         logger.debug(f"Delete recipe {recipe_id}")
-        recipe = await self.uow.recipe_repository.filter(recipe_id = recipe_id, user_id = user_id)
+        recipe = await self.uow.recipe_repository.filter(id = recipe_id, profile_id = int(user_id))
         if not recipe:
             logger.warn(f"Attemp delete recipe user {user_id}")
             raise HTTPException(
                 detail = "Forbidden", 
                 status_code=status.HTTP_403_FORBIDDEN
         )
+        logger.debug("Рецепт удален")
         await self.uow.recipe_repository.delete(recipe_id)
 
     @BaseUowService.transactional()
@@ -95,7 +96,38 @@ class RecipeService(BaseUowService['RecipehUow']):
         logger.debug("Рецепт создан")
 
     @BaseUowService.transactional()
-    async def update_recipe(self, recipe_id: int, ingredients : list[dict[str, Any]]):
-        for ingredient in ingredients:
-            await self.uow.recipe_ingredient_repository.update_or_create(recipe_id, **ingredient)
+    async def update_recipe(self, recipe_id: int, ingredient_id : list[int], **values):
+        logger.debug(f"Обновление рецепта {recipe_id}")
+        await self.uow.recipe_ingredient_repository.update(recipe_id=recipe_id, ingredient_id=ingredient_id, **values)
+        logger.debug("Рецепт обновлен")
+
+    @BaseUowService.transactional()
+    async def add_favorite(self, recipe_id : int , user_id):
+        logger.debug(f"Добавление рецепта в избранное {recipe_id}")
+        favorite = await self.uow.favorite_repository.filter(profile_id = user_id, recipe_id = recipe_id)
+        if favorite: 
+            logger.warn("Рецепт уже в избранном")
+            raise HTTPException(
+                detail="Recipe already added", 
+                status_code=status.HTTP_409_CONFLICT
+            )
+        await self.uow.favorite_repository.create(profile_id = user_id, recipe_id = recipe_id)
+        logger.debug("Рецепт добаылен в избранное")
+
+    @BaseUowService.transactional()
+    async def delete_favorite(self, recipe_id : int , user_id):
+        logger.debug(f"Удаление рецепта из избранного {recipe_id}")
+        await self.uow.favorite_repository.delete(profile_id = user_id, recipe_id = recipe_id)
+        logger.debug("рецепт удален")
+
+    @BaseUowService.transactional()
+    async def get_favorite(self, user_id : int):
+        logger.debug(f"Получение избранного")
+        favorites = await self.uow.favorite_repository.get_favorite_recipes(profile_id=user_id)
+        logger.debug("сериализуем ...")
+        serialize_favorites = [FavoriteResponse.model_validate(favorite).model_dump() for favorite in favorites]
+        return serialize_favorites
+       
+
+
         

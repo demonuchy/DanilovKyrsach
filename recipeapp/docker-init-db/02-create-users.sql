@@ -1,11 +1,11 @@
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'dima') THEN
-        CREATE USER dima WITH PASSWORD 'root';
-        RAISE NOTICE 'User dima created';
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ivan') THEN
+        CREATE USER ivan WITH PASSWORD 'root';
+        RAISE NOTICE 'User ivan created';
     ELSE
-        RAISE NOTICE 'User dima already exists';
+        RAISE NOTICE 'User ivan already exists';
     END IF;
 END $$;
 
-GRANT ALL PRIVILEGES ON DATABASE recipesdb TO dima;
+GRANT ALL PRIVILEGES ON DATABASE recipesdb TO ivan;
